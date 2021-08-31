@@ -1,5 +1,6 @@
-const path = require('../node_modules/path');
-const fastify = require('../node_modules/fastify') ({
+import path from 'path';
+import Fastify from 'fastify';
+const fastify = Fastify ({
     logger: true
 });
 
@@ -15,8 +16,8 @@ fastify.register(require('./routes/bus/get_bus_data'));
 fastify.register(require('./routes/get_random_quote'));
 
 const start = async() => {
-    await fastify.register(require('../node_modules/middie'))
-    fastify.use(require('../node_modules/cors')())
+    await fastify.register(require('middie'))
+    fastify.use(require('cors')())
 
     await fastify.listen(3003, '0.0.0.0')
     .then((address) => console.log(`server is listening on ${address}`))
