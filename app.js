@@ -1,6 +1,5 @@
-import path from 'path';
-import Fastify from 'fastify';
-const fastify = Fastify ({
+const path = require('path');
+const fastify = require('fastify') ({
     logger: true
 });
 
