@@ -10,7 +10,7 @@ module.exports = async (fastify, opts) => {
         connectionString: `mysql://${config.username}@${config.host}/${config.database}`
     })
 
-    fastify.get('/home-management/login', async function (request, reply) {
+    fastify.get('/home_management/login', async function (request, reply) {
         fastify.mysql.getConnection(onConnect)
 
         let client;
