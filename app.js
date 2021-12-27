@@ -14,7 +14,7 @@ fastify.get('/', async (request, reply) => {
 // fastify.register(require('./routes/bus/get_bus_data'));
 fastify.register(require('./routes/get_random_quote'));
 
-fastify.register(require('./routes/home-management/login'));
+fastify.register(require('./routes/home_management/login'));
 
 const start = async() => {
     await fastify.register(require('middie'))
