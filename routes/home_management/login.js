@@ -1,30 +1,28 @@
 const dotenv = require('dotenv');
+const mysql = require('mysql');
 
 module.exports = async (fastify, opts) => {
     const buf = Buffer.from('BASIC=basic')
     const config = dotenv.parse(buf, {
         path: './mysql.env'
-    })
+    });
 
-    fastify.register(require('fastify-mysql'), {
-        connectionString: `mysql://${config.username}@${config.host}/${config.database}`
-    })
+    var connection = mysql.createConnection({
+        host: config.host,
+        user: config.username,
+        password: config.password,
+        database: config.database
+    });
 
     fastify.get('/home_management/login', async function (request, reply) {
-        fastify.mysql.getConnection(onConnect)
+        connection.connect();
 
-        let client;
-        const onConnect = (error, client) => {
-            if (error) return reply.send(error);
-            client = client
-        }
+        connection.query("SELECT * FROM Users", (error, result, fields) => {
+            if (error) return reply.send({output: "error", error: error.message});
 
-        client.query('SELECT * FROM Users',
-            [],
-            onResult = (err, result) => {
-                client.release()
-                reply.send(err || result)
-            }
-        )
+            reply.send("success");
+        });
+
+        connection.end();
     });
 }
