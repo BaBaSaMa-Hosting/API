@@ -7,14 +7,14 @@ module.exports = async (fastify, opts) => {
         path: './mysql.env'
     });
 
-    var connection = mysql.createConnection({
-        host: config.host,
-        user: config.username,
-        password: config.password,
-        database: config.database
-    });
-
     fastify.get('/home_management/login', async function (request, reply) {
+        const connection = mysql.createConnection({
+            host: config.host,
+            user: config.username,
+            password: config.password,
+            database: config.database
+        });
+        
         connection.connect();
 
         connection.query("SELECT * FROM Users", (error, result, fields) => {
