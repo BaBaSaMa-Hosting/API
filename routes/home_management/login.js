@@ -7,7 +7,7 @@ module.exports = async (fastify, opts) => {
         path: './mysql.env'
     });
 
-    console.log(config);
+    console.log(`env config: ${JSON.stringify(config)}`);
 
     fastify.get('/home_management/login', async function (request, reply) {
         const connection = mysql.createConnection({
