@@ -1,20 +1,15 @@
-const dotenv = require('dotenv');
+const dotenv = require('dotenv').config({path: './mysql.env'});
 const mysql = require('mysql2');
 
 module.exports = async (fastify, opts) => {
-    const buf = Buffer.from('BASIC=basic')
-    const config = dotenv.parse(buf, {
-        path: './mysql.env'
-    });
-
-    console.log(`env config: ${JSON.stringify(config)}`);
+    console.log(`env config: ${JSON.stringify(process.env)}`);
 
     fastify.get('/home_management/login', async function (request, reply) {
         const connection = mysql.createConnection({
-            host: config.host,
-            user: config.username,
-            password: config.password,
-            database: config.database
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
         });
         
         connection.connect();
