@@ -1,4 +1,4 @@
-const dotenv = require('dotenv').config({path: './mysql.env'});
+const dotenv = require('dotenv').config({ path: '/var/www/Main/API/routes/home_management/mysql.env' , debug: true});
 const mysql = require('mysql2');
 
 module.exports = async (fastify, opts) => {
