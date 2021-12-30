@@ -15,6 +15,9 @@ fastify.get('/', async (request, reply) => {
 fastify.register(require('./routes/get_random_quote'));
 
 fastify.register(require('./routes/home_management/auth'));
+fastify.register(require('./routes/home_management/home'));
+fastify.register(require('./routes/home_management/user'));
+
 
 const start = async() => {
     await fastify.register(require('middie'))
