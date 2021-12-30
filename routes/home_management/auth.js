@@ -102,6 +102,14 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
+        if (request.body.display_name === undefined || request.body.display_name === null) {
+            reply.send({
+                output: 'error',
+                message: 'display name is not passed in.'
+            });
+            return;
+        }
+
         if (request.body.user_id === undefined || request.body.user_id === null) {
             reply.send({
                 output: 'error',
@@ -136,8 +144,8 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("INSERT INTO Users (user_id, display_name, api_key) VALUES ('?', DEFAULT, '?')", [
-            request.body.user_id, request.body.api_key
+        connection.query("INSERT INTO Users (user_id, display_name, api_key) VALUES ('?', '?', '?')", [
+            request.body.user_id,  request.body.display_name, request.body.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({
                 output: "error",
