@@ -8,6 +8,9 @@ const {
 } = require('uuid');
 
 module.exports = async (fastify, opts) => {
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // get display name
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/user', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
             reply.send({
@@ -37,6 +40,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: "success",
+                display_name: rows[0].display_name
+            })
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -50,6 +58,9 @@ module.exports = async (fastify, opts) => {
         return;
     });
 
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // update display name
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/user/update_name', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
             reply.send({
@@ -98,6 +109,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: 'success',
+                message: 'user display name successfully updated'
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -107,10 +123,6 @@ module.exports = async (fastify, opts) => {
             return;
         });
 
-        reply.send({
-            output: 'success',
-            message: 'user display name successfully updated'
-        });
         connection.end();
         return;
     });

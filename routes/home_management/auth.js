@@ -40,6 +40,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: 'success',
+                message: 'user successfully logged in'
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -48,12 +53,6 @@ module.exports = async (fastify, opts) => {
             connection.end();
             return;
         })
-
-        reply.send({
-            output: 'success',
-            message: 'user successfully logged in'
-        });
-
         connection.end();
         return;
     });

@@ -152,6 +152,12 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            
+            reply.send({
+                output: 'success',
+                message: 'home creation success',
+                home_id: new_home_id
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -159,11 +165,6 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        reply.send({
-            output: 'success',
-            message: 'home creation success',
-            home_id: new_home_id
-        });
         connection.end();
         return;
     });
@@ -257,6 +258,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: 'success',
+                message: 'home successfully updated'
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -264,10 +270,6 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        reply.send({
-            output: 'success',
-            message: 'home successfully updated'
-        });
         connection.end();
         return;
     });
@@ -395,6 +397,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: 'success',
+                message: 'user successfully added into home'
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -402,10 +409,6 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        reply.send({
-            output: 'success',
-            message: 'user successfully added into home'
-        });
         connection.end();
         return;
     });
@@ -516,6 +519,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: 'success',
+                message: 'user successfully added into home'
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -523,10 +531,6 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        reply.send({
-            output: 'success',
-            message: 'user successfully added into home'
-        });
         connection.end();
         return;
     });
