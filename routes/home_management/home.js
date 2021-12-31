@@ -495,7 +495,7 @@ module.exports = async (fastify, opts) => {
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.target_user_id
         ]).then(([rows, fields]) => {
-            if (result.length === 0) {
+            if (rows.length === 0) {
                 reply.send({
                     output: 'error',
                     message: 'target user does not exist'
@@ -512,7 +512,7 @@ module.exports = async (fastify, opts) => {
         connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
             'Exited', request.body.target_user_id
         ]).then(([rows, fields]) => {
-            if (result.affectedRows === 0) {
+            if (rows.affectedRows === 0) {
                 reply.send({
                     output: 'error',
                     message: 'fail to remove user from home'

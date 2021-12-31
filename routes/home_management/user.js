@@ -102,7 +102,7 @@ module.exports = async (fastify, opts) => {
         connection.promise().query("UPDATE Users SET display_name = ? WHERE user_id = ?", [
             request.body.new_display_name, request.body.user_id
         ]).then(([rows, fields]) => {
-            if (result.affectedRows === 0) {
+            if (rows.affectedRows === 0) {
                 reply.send({
                     output: 'error',
                     message: 'user register failure'
