@@ -24,7 +24,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -61,7 +61,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.body.user_id, request.body.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -72,7 +72,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("UPDATE Users SET display_name = '?' WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("UPDATE Users SET display_name = ? WHERE user_id = ? AND api_key = ?", [
             request.body.new_display_name, request.body.user_id, request.body.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});

@@ -126,7 +126,27 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+            request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: "retry",
+                    error: "Please register an account first",
+                    where_to: "register"
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end();
+            return;
+        })
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.body.user_id, request.body.api_key
         ]).then(([rows, fields]) => {
             if (result.length > 0) {
@@ -146,7 +166,7 @@ module.exports = async (fastify, opts) => {
             return;
         });
 
-        connection.promise().query("INSERT INTO Users (user_id, display_name, api_key) VALUES ('?', '?', '?')", [
+        connection.promise().query("INSERT INTO Users (user_id, display_name, api_key) VALUES (?, ?, ?)", [
             request.body.user_id, request.body.display_name, request.body.api_key
         ]).then(([rows, fields]) => {
             if (result.affectedRows === 0) {
@@ -196,7 +216,7 @@ module.exports = async (fastify, opts) => {
         let new_api_key = uuidv4();
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = '?'", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (result.length === 0) {
@@ -215,7 +235,7 @@ module.exports = async (fastify, opts) => {
             return;
         });
 
-        connection.promise().query("UPDATE Users SET api_key = '?' WHERE user_id = '?'", [
+        connection.promise().query("UPDATE Users SET api_key = ? WHERE user_id = ?", [
             new_api_key, request.query.user_id
         ]).then(([rows, fields]) => {
             if (result.affectedRows === 0) {

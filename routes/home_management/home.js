@@ -27,7 +27,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -38,7 +38,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = '?'", [
+        connection.query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ?", [
             request.query.user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -76,7 +76,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -91,7 +91,7 @@ module.exports = async (fastify, opts) => {
         const generate_home_id = () => {
             new_home_id = uuidv4().substring(0, 12);
 
-            connection.query("SELECT * FROM Homes WHERE home_id = '?'", [
+            connection.query("SELECT * FROM Homes WHERE home_id = ?", [
                 new_home_id
             ], (error, result, fields) => {
                 if (error) return reply.send({output: "error", error: error.message});
@@ -104,7 +104,7 @@ module.exports = async (fastify, opts) => {
         }
         generate_home_id();
 
-        connection.query("INSERT INTO Homes (home_id, home_name, created_on, updated_on, created_by, updated_by) VALUES ('?', '', DEFAULT, DEFAULT, '?', '?')", [
+        connection.query("INSERT INTO Homes (home_id, home_name, created_on, updated_on, created_by, updated_by) VALUES (?, '', DEFAULT, DEFAULT, ?, ?)", [
             new_home_id, request.body.user_id, request.body.user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -115,7 +115,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES ('?', '?', 'Home Owner', 'Staying', DEFAULT)", [
+        connection.query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, 'Home Owner', 'Staying', DEFAULT)", [
             new_home_id, request.body.user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -164,7 +164,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -175,7 +175,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("SELECT * FROM Homes WHERE home_id = '?'", [
+        connection.query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -191,7 +191,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("UPDATE Homes SET home_name = '?' WHERE home_id = '?'", [
+        connection.query("UPDATE Homes SET home_name = ? WHERE home_id = ?", [
             request.body.home_name, request.body.home_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -240,7 +240,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -251,7 +251,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("SELECT * FROM Homes WHERE home_id = '?'", [
+        connection.query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -267,7 +267,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.new_user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -278,7 +278,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES ('?', '?', '', DEFAULT, DEFAULT)", [
+        connection.query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, '', DEFAULT, DEFAULT)", [
             request.body.home_id, request.body.new_user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -327,7 +327,7 @@ module.exports = async (fastify, opts) => {
         
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -338,7 +338,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("SELECT * FROM Homes WHERE home_id = '?'", [
+        connection.query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -354,7 +354,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?'", [
+        connection.query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.target_user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
@@ -365,7 +365,7 @@ module.exports = async (fastify, opts) => {
             }
         });
 
-        connection.query("UPDATE User_In_Home SET invitation_status = '?' WHERE user_id = '?'", [
+        connection.query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
             'Exited', request.body.target_user_id
         ], (error, result, fields) => {
             if (error) return reply.send({output: "error", error: error.message});
