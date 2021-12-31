@@ -109,7 +109,7 @@ module.exports = async (fastify, opts) => {
         connection.promise().query("INSERT INTO Users (user_id, display_name) VALUES (?, ?)", [
             request.body.user_id, request.body.display_name
         ]).then(([rows, fields]) => {
-            if (result.affectedRows === 0) {
+            if (rows.affectedRows === 0) {
                 reply.send({
                     output: 'error',
                     message: 'user register error'
