@@ -129,30 +129,10 @@ module.exports = async (fastify, opts) => {
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
+            if (rows.length === 1) {
                 reply.send({
                     output: "retry",
-                    error: "Please register an account first",
-                    where_to: "register"
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                error: error.message
-            });
-            connection.end();
-            return;
-        })
-
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
-            request.body.user_id, request.body.api_key
-        ]).then(([rows, fields]) => {
-            if (result.length > 0) {
-                reply.send({
-                    output: 'retry',
-                    message: 'user already exist',
+                    error: "Account already exist",
                     where_to: "login"
                 });
                 return;
