@@ -29,7 +29,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?'", [
+        await connection.query("SELECT * FROM Users WHERE user_id = ?", [
             request.query.user_id
         ], (error, result, fields) => {
             if (error) return reply.send({
