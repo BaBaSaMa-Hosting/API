@@ -38,7 +38,9 @@ module.exports = async (fastify, opts) => {
             });
 
             if (result.length === 0) {
-                if (request.query.api_key === undefined || request.query.api_key === null || request.query.api_key === "") {
+                reply.send(request.query.api_key);
+                return;
+                if (request.query.api_key === undefined || request.query.api_key === null) {
                     let new_api_key = uuidv4();
                     reply.send({
                         output: 'failure',
