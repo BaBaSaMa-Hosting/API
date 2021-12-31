@@ -29,17 +29,10 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        await connection.query("SELECT * FROM Users WHERE user_id = ?", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.query.user_id
-        ], (error, result, fields) => {
-            if (error) return reply.send({
-                output: "error",
-                error: error.message
-            });
-
-            reply.send(result);
-            return;
-            if (result.length === 0) {
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
                 if (request.query.api_key === undefined || request.query.api_key === null) {
                     let new_api_key = uuidv4();
                     reply.send({
@@ -56,7 +49,14 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
-        });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end();
+            return;
+        })
 
         if (request.query.api_key === undefined || request.query.api_key === null) {
             reply.send({
@@ -66,14 +66,9 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
             request.query.user_id, request.query.api_key
-        ], (error, result, fields) => {
-            if (error) return reply.send({
-                output: "error",
-                error: error.message
-            });
-
+        ]).then(([rows, fields]) => {
             if (result.length === 0) {
                 reply.send({
                     output: 'error',
@@ -86,7 +81,14 @@ module.exports = async (fastify, opts) => {
                 output: 'success',
                 message: 'user successfully logged in'
             });
-        });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end()
+            return;
+        })
 
         connection.end();
         return;
@@ -147,7 +149,7 @@ module.exports = async (fastify, opts) => {
         });
 
         connection.query("INSERT INTO Users (user_id, display_name, api_key) VALUES ('?', '?', '?')", [
-            request.body.user_id,  request.body.display_name, request.body.api_key
+            request.body.user_id, request.body.display_name, request.body.api_key
         ], (error, result, fields) => {
             if (error) return reply.send({
                 output: "error",
