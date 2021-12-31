@@ -37,9 +37,9 @@ module.exports = async (fastify, opts) => {
                 error: error.message
             });
 
+            reply.send(result);
+            return;
             if (result.length === 0) {
-                reply.send(request.query.api_key);
-                return;
                 if (request.query.api_key === undefined || request.query.api_key === null) {
                     let new_api_key = uuidv4();
                     reply.send({
