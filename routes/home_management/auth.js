@@ -20,6 +20,17 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
+        if (request.query.api_key === undefined || request.query.api_key === null) {
+            let new_api_key = uuidv4();
+            reply.send({
+                output: 'retry',
+                message: 'No API Key received, here is a new one',
+                api_key: new_api_key,
+                where_to: "login"
+            });
+            return;
+        }
+
         const connection = mysql.createConnection({
             host: process.env.host,
             user: process.env.username,
@@ -33,19 +44,10 @@ module.exports = async (fastify, opts) => {
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                if (request.query.api_key === undefined || request.query.api_key === null) {
-                    let new_api_key = uuidv4();
-                    reply.send({
-                        output: 'failure',
-                        message: 'No API Key received, here is a new one',
-                        api_key: new_api_key
-                    });
-                    return;
-                }
-
                 reply.send({
-                    output: "error",
-                    error: "Please register an account first"
+                    output: "retry",
+                    error: "Please register an account first",
+                    where_to: "register"
                 });
                 return;
             }
@@ -58,21 +60,14 @@ module.exports = async (fastify, opts) => {
             return;
         })
 
-        if (request.query.api_key === undefined || request.query.api_key === null) {
-            reply.send({
-                output: 'failure',
-                message: 'Need to reset api key'
-            });
-            return;
-        }
-
-        connection.promise().query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ? AND api_key = ?", [
             request.query.user_id, request.query.api_key
         ]).then(([rows, fields]) => {
             if (result.length === 0) {
                 reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
+                    output: 'retry',
+                    message: 'api key does not match.',
+                    where_to: "reset"
                 });
                 return;
             }
@@ -131,35 +126,33 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = '?' AND api_key = '?'", [
             request.body.user_id, request.body.api_key
-        ], (error, result, fields) => {
-            if (error) return reply.send({
-                output: "error",
-                error: error.message
-            });
-
+        ]).then(([rows, fields]) => {
             if (result.length > 0) {
                 reply.send({
-                    output: 'error',
-                    message: 'user already exist'
+                    output: 'retry',
+                    message: 'user already exist',
+                    where_to: "login"
                 });
                 return;
             }
-        });
-
-        connection.query("INSERT INTO Users (user_id, display_name, api_key) VALUES ('?', '?', '?')", [
-            request.body.user_id, request.body.display_name, request.body.api_key
-        ], (error, result, fields) => {
-            if (error) return reply.send({
+        }).catch((error) => {
+            reply.send({
                 output: "error",
                 error: error.message
             });
+            connection.end();
+            return;
+        });
 
+        connection.promise().query("INSERT INTO Users (user_id, display_name, api_key) VALUES ('?', '?', '?')", [
+            request.body.user_id, request.body.display_name, request.body.api_key
+        ]).then(([rows, fields]) => {
             if (result.affectedRows === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'user register failure'
+                    message: 'user register error'
                 });
                 return;
             }
@@ -168,7 +161,14 @@ module.exports = async (fastify, opts) => {
                 output: 'success',
                 message: 'user successfully register'
             });
-        });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end();
+            return;
+        })
 
         connection.end();
         return;
@@ -196,31 +196,28 @@ module.exports = async (fastify, opts) => {
         let new_api_key = uuidv4();
         connection.connect();
 
-        connection.query("SELECT * FROM Users WHERE user_id = '?'", [
+        connection.promise().query("SELECT * FROM Users WHERE user_id = '?'", [
             request.query.user_id
-        ], (error, result, fields) => {
-            if (error) return reply.send({
-                output: "error",
-                error: error.message
-            });
-
+        ]).then(([rows, fields]) => {
             if (result.length === 0) {
                 reply.send({
-                    output: 'error',
+                    output: 'retry',
                     message: 'user does not exist.'
                 });
                 return;
             }
-        });
-
-        connection.query("UPDATE Users SET api_key = '?' WHERE user_id = '?'", [
-            new_api_key, request.query.user_id
-        ], (error, result, fields) => {
-            if (error) return reply.send({
+        }).catch((error) => {
+            reply.send({
                 output: "error",
                 error: error.message
             });
+            connection.end();
+            return;
+        });
 
+        connection.promise().query("UPDATE Users SET api_key = '?' WHERE user_id = '?'", [
+            new_api_key, request.query.user_id
+        ]).then(([rows, fields]) => {
             if (result.affectedRows === 0) {
                 reply.send({
                     output: 'error',
@@ -228,6 +225,13 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end();
+            return;
         });
 
         reply.send({
