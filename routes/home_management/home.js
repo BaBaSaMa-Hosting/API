@@ -56,6 +56,11 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            reply.send({
+                output: 'success',
+                home: rows
+            })
         }).catch((error) => {
             reply.send({
                 output: "error",

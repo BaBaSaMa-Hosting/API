@@ -126,4 +126,74 @@ module.exports = async (fastify, opts) => {
         connection.end();
         return;
     });
+
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // get user lists
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    fastify.get('/home_management/users', async function (request, reply) {
+        if (request.query.user_id === undefined || request.query.user_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        const connection = mysql.createConnection({
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
+        });
+
+        connection.connect();
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+            request.query.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: "retry",
+                    error: "Please register an account first",
+                    where_to: "register"
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end();
+            return;
+        });
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
+            request.query.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: "retry",
+                    error: "Please register an account first",
+                    where_to: "register"
+                });
+                return;
+            }
+
+            reply.send({
+                output: 'success',
+                users: rows
+            })
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+            connection.end();
+            return;
+        })
+
+        connection.end();
+        return;
+    });
 }
