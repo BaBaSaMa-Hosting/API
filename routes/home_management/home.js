@@ -46,7 +46,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? AND invitation_status != 'Exited'", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -406,6 +406,95 @@ module.exports = async (fastify, opts) => {
             reply.send({
                 output: 'success',
                 message: 'user successfully added into home'
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+        });
+
+        connection.end();
+        return;
+    });
+
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // set user to staying
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    fastify.post('/home_management/home/update_invitation', async function (request, reply) {
+        if (request.body.user_id === undefined || request.body.user_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.home_id === undefined || request.body.home_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'home id is not passed in.'
+            });
+            return;
+        }
+
+        const connection = mysql.createConnection({
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
+        });
+
+        connection.connect();
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+            request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not exist.'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+        });
+
+        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'home does not exist'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                error: error.message
+            });
+        });
+
+        connection.promise().query("UPDATE User_In_Home SET invitation_status = 'Staying', last_updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND user_id = ?", [
+            request.body.home_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'fail to change home name'
+                });
+                return;
+            }
+
+            reply.send({
+                output: 'success',
+                message: 'status successfully updated'
             });
         }).catch((error) => {
             reply.send({
