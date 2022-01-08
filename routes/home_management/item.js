@@ -50,7 +50,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -67,7 +67,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -84,7 +84,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -107,7 +107,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -221,7 +221,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -238,7 +238,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -255,7 +255,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -279,7 +279,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -402,7 +402,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -419,7 +419,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -436,7 +436,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -453,7 +453,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -475,7 +475,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
         
@@ -533,7 +533,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -550,7 +550,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -567,7 +567,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -584,7 +584,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -606,7 +606,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
         
@@ -664,7 +664,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -681,7 +681,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -698,7 +698,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -722,7 +722,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -739,7 +739,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -767,7 +767,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
         
@@ -825,7 +825,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -842,7 +842,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -859,7 +859,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -876,7 +876,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -898,7 +898,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
         
@@ -956,7 +956,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -973,7 +973,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -990,7 +990,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -1007,7 +1007,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -1029,7 +1029,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
         

@@ -35,7 +35,7 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 0) {
                 reply.send({
                     output: "error",
-                    error: "user does not exist."
+                    message: "user does not exist."
                 });
                 return;
             }
@@ -47,7 +47,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         })
 
@@ -81,16 +81,15 @@ module.exports = async (fastify, opts) => {
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
-                    output: "retry",
-                    error: "Please register an account first",
-                    where_to: "register"
+                    output: "error",
+                    message: "user does not exist"
                 });
                 return;
             }
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -112,7 +111,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -147,14 +146,14 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 0) {
                 reply.send({
                     output: "error",
-                    error: "user does not exist"
+                    message: "user does not exist"
                 });
                 return;
             }
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         });
 
@@ -164,7 +163,7 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 0) {
                 reply.send({
                     output: "error",
-                    error: "no user retrieved"
+                    message: "no user retrieved"
                 });
                 return;
             }
@@ -176,7 +175,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
         })
 

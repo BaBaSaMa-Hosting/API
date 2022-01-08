@@ -35,7 +35,7 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 0) {
                 reply.send({
                     output: "retry",
-                    error: "Please register an account first",
+                    message: "Please register an account first",
                     where_to: "register"
                 });
                 return;
@@ -48,7 +48,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
             connection.end();
             return;
@@ -100,7 +100,7 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 1) {
                 reply.send({
                     output: "retry",
-                    error: "Account already exist",
+                    message: "Account already exist",
                     where_to: "login"
                 });
                 return;
@@ -108,7 +108,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
             connection.end();
             return;
@@ -132,7 +132,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             reply.send({
                 output: "error",
-                error: error.message
+                message: error.message
             });
             connection.end();
             return;
