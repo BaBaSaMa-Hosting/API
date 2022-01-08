@@ -59,7 +59,7 @@ module.exports = async (fastify, opts) => {
 
             rows.forEach((i, index) => {
                 let buffer  = new Buffer(i.home_image);
-                rows[index].home_image = buffer.toString('base64');
+                rows[index].home_image = buffer.toString('base64url');
             })
 
             reply.send({
