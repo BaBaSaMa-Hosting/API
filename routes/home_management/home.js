@@ -57,6 +57,11 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
+            rows.forEach((i, index) => {
+                let buffer  = new Buffer(i.home_image, 'binary');
+                rows[index].home_image = buffer.toString('base64');
+            })
+
             reply.send({
                 output: 'success',
                 home: rows
