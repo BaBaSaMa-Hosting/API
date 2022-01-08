@@ -34,9 +34,8 @@ module.exports = async (fastify, opts) => {
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
-                    output: "retry",
-                    error: "Please register an account first",
-                    where_to: "register"
+                    output: "error",
+                    error: "user does not exist."
                 });
                 return;
             }
@@ -50,8 +49,6 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 error: error.message
             });
-            connection.end();
-            return;
         })
 
         connection.end();
@@ -95,8 +92,6 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 error: error.message
             });
-            connection.end();
-            return;
         });
 
         connection.promise().query("UPDATE Users SET display_name = ? WHERE user_id = ?", [
@@ -119,8 +114,6 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 error: error.message
             });
-            connection.end();
-            return;
         });
 
         connection.end();
@@ -153,9 +146,8 @@ module.exports = async (fastify, opts) => {
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
-                    output: "retry",
-                    error: "Please register an account first",
-                    where_to: "register"
+                    output: "error",
+                    error: "user does not exist"
                 });
                 return;
             }
@@ -164,8 +156,6 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 error: error.message
             });
-            connection.end();
-            return;
         });
 
         connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
@@ -173,9 +163,8 @@ module.exports = async (fastify, opts) => {
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
-                    output: "retry",
-                    error: "Please register an account first",
-                    where_to: "register"
+                    output: "error",
+                    error: "no user retrieved"
                 });
                 return;
             }
@@ -189,8 +178,6 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 error: error.message
             });
-            connection.end();
-            return;
         })
 
         connection.end();
