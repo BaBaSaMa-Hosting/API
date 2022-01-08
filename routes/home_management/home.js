@@ -78,6 +78,78 @@ module.exports = async (fastify, opts) => {
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // get user staying in home
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    fastify.get('/home_management/home/users', async function (request, reply) {
+        if (request.query.user_id === undefined || request.query.user_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.query.home_id === undefined || request.query.home_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        const connection = mysql.createConnection({
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
+        });
+
+        connection.connect();
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+            request.query.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not exist.'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id != ? AND home_id = ?", [
+            request.query.user_id, request.query.home_id 
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'there is no other user in home.'
+                });
+                return;
+            }
+
+            reply.send({
+                output: 'success',
+                home: rows
+            })
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.end();
+        return;
+    });
+
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     // create new home
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/home/create', async function (request, reply) {
