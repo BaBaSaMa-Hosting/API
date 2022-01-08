@@ -77,6 +77,14 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
+        if (request.body.auth_type === undefined || request.body.auth_type === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
         const connection = mysql.createConnection({
             host: process.env.host,
             user: process.env.username,
@@ -106,8 +114,8 @@ module.exports = async (fastify, opts) => {
             return;
         });
 
-        connection.promise().query("INSERT INTO Users (user_id, display_name) VALUES (?, ?)", [
-            request.body.user_id, request.body.display_name
+        connection.promise().query("INSERT INTO Users (user_id, display_name, auth_type) VALUES (?, ?, ?)", [
+            request.body.user_id, request.body.display_name, request.body.auth_type 
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
                 reply.send({
