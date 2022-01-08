@@ -84,6 +84,22 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
+        if (request.body.home_name === undefined || request.body.home_name === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.home_image === undefined || request.body.home_image === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
         const connection = mysql.createConnection({
             host: process.env.host,
             user: process.env.username,
@@ -130,8 +146,8 @@ module.exports = async (fastify, opts) => {
         }
         generate_home_id();
 
-        connection.promise().query("INSERT INTO Homes (home_id, home_name, created_on, updated_on, created_by, updated_by) VALUES (?, '', DEFAULT, DEFAULT, ?, ?)", [
-            new_home_id, request.body.user_id, request.body.user_id
+        connection.promise().query("INSERT INTO Homes (home_id, home_name, home_image, created_on, updated_on, created_by, updated_by) VALUES (?, ?, ?, DEFAULT, DEFAULT, ?, ?)", [
+            new_home_id, request.body.home_name, request.body.home_image, request.body.user_id, request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
                 reply.send({
