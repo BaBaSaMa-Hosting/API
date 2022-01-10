@@ -168,6 +168,9 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
+            let buffer  = new Buffer(rows[0].home_image, 'base64');
+            rows[0].home_image = buffer.toString();
+            
             connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND invitation_status != 'Exited'", [
                 request.query.home_id
             ]).then(([rows2, fields2]) => {
