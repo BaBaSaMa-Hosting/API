@@ -67,6 +67,14 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
+        if (request.body.new_display_name === undefined || request.body.new_display_name === null) {
+            reply.send({
+                output: 'error',
+                message: 'display name is not passed in.'
+            });
+            return;
+        }
+
         const connection = mysql.createConnection({
             host: process.env.host,
             user: process.env.username,
