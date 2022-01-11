@@ -157,7 +157,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
+        await connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -171,7 +171,7 @@ module.exports = async (fastify, opts) => {
             let buffer  = new Buffer(rows[0].home_image, 'base64');
             rows[0].home_image = buffer.toString();
             
-            connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND invitation_status != 'Exited'", [
+            await connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND invitation_status != 'Exited'", [
                 request.query.home_id
             ]).then(([rows2, fields2]) => {
                 if (rows2.length === 0) {
