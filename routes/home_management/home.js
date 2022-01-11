@@ -735,6 +735,167 @@ module.exports = async (fastify, opts) => {
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // update staying users
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    fastify.post('/home_management/home/update_users', async function (request, reply) {
+        if (request.body.user_id === undefined || request.body.user_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.home_id === undefined || request.body.home_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'home id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.user_ids === undefined || request.body.user_ids === null) {
+            reply.send({
+                output: 'error',
+                message: 'user list is not passed in.'
+            });
+            return;
+        }
+
+        let user_ids = JSON.parse(request.body.user_ids);
+
+        const connection = mysql.createConnection({
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
+        });
+
+        connection.connect();
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+            request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not exist.'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'home does not exist'
+                });
+                return;
+            }
+
+            if (rows[0].created_by !== request.body.user_id) {
+                reply.send({
+                    output: 'error',
+                    message: 'you are not the owner of this home'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        let target_user_list = []
+
+        await connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id != ?", [
+            request.body.home_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            rows.forEach((i, index) => {
+                if (!user_ids.includes(i.user_id)) target_user_list.push(i.user_id);
+            })
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        new Promise ((resolve, reject) => {
+            target_user_list.forEach((i, index) => {
+                connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id = ?", [
+                    request.body.home_id, i
+                ]).then(([rows, fields]) => {
+                    if (rows.length === 0) {
+                        connection.promise().query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, '', DEFAULT, DEFAULT)", [
+                            request.body.home_id, i
+                        ]).then(([rows, fields]) => {
+                            if (rows.affectedRows === 0) {
+                                reply.send({
+                                    output: 'error',
+                                    message: 'fail to add user to home'
+                                });
+                                return;
+                            }
+                
+                            reply.send({
+                                output: 'success',
+                                message: 'user successfully added into home'
+                            });
+                        }).catch((error) => {
+                            reply.send({
+                                output: "error",
+                                message: error.message
+                            });
+                        });
+                    } else {
+                        connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
+                            'Removed', i
+                        ]).then(([rows, fields]) => {
+                            if (rows.affectedRows === 0) {
+                                reply.send({
+                                    output: 'error',
+                                    message: 'fail to remove user from home'
+                                });
+                                return;
+                            }
+                
+                            reply.send({
+                                output: 'success',
+                                message: 'user successfully remove from home'
+                            });
+                        }).catch((error) => {
+                            reply.send({
+                                output: "error",
+                                message: error.message
+                            });
+                        });
+                    }
+
+                    if (index == user_ids.length) resolve()
+                }).catch((error) => {
+                    reply.send({
+                        output: "error",
+                        message: error.message
+                    });
+                });
+            })
+        }).then(() => {
+            connection.end();
+            return;
+        });
+    });
+
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     // remove user from home
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/home/remove_user', async function (request, reply) {
@@ -843,7 +1004,7 @@ module.exports = async (fastify, opts) => {
 
             reply.send({
                 output: 'success',
-                message: 'user successfully added into home'
+                message: 'user successfully removed from home'
             });
         }).catch((error) => {
             reply.send({
