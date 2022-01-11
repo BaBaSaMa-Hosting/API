@@ -54,7 +54,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? AND UIH.home_id = ? AND invitation_status != 'Exited'", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? AND UIH.home_id = ?", [
             request.query.user_id, request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {

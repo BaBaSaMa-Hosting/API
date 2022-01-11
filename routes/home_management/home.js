@@ -46,7 +46,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? AND invitation_status != 'Exited'", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? ", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -140,7 +140,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? AND invitation_status != 'Exited'", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ?", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -232,7 +232,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE UIH.user_id != ? AND UIH.home_id = ? AND invitation_status != 'Removed' AND invitation_status != 'Exited'", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE UIH.user_id != ? AND UIH.home_id = ?", [
             request.query.user_id, request.query.home_id 
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -860,55 +860,29 @@ module.exports = async (fastify, opts) => {
                             });
                         });
                     } else {
-                        if (rows[0].invitation_status !== "Exited" && rows[0].invitation_status !== "Removed") {
-                            connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
-                                'Removed', i
-                            ]).then(([rows, fields]) => {
-                                if (rows.affectedRows === 0) {
-                                    reply.send({
-                                        output: 'error',
-                                        message: 'fail to remove user from home'
-                                    });
-                                    return;
-                                }
-                    
+                        connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
+                            i, request.body.home_id
+                        ]).then(([rows, fields]) => {
+                            if (rows.affectedRows === 0) {
                                 reply.send({
-                                    output: 'success',
-                                    message: 'user successfully remove from home'
+                                    output: 'error',
+                                    message: 'fail to delete user from home'
                                 });
-    
-                                if (index == user_ids.length) resolve()
-                            }).catch((error) => {
-                                reply.send({
-                                    output: "error",
-                                    message: error.message
-                                });
+                                return;
+                            }
+                
+                            reply.send({
+                                output: 'success',
+                                message: 'user successfully remove from home'
                             });
-                        } else {
-                            connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
-                                'Invited', i
-                            ]).then(([rows, fields]) => {
-                                if (rows.affectedRows === 0) {
-                                    reply.send({
-                                        output: 'error',
-                                        message: 'fail to invite user to home'
-                                    });
-                                    return;
-                                }
-                    
-                                reply.send({
-                                    output: 'success',
-                                    message: 'user successfully invited to home'
-                                });
-    
-                                if (index == user_ids.length) resolve()
-                            }).catch((error) => {
-                                reply.send({
-                                    output: "error",
-                                    message: error.message
-                                });
+
+                            if (index == user_ids.length) resolve()
+                        }).catch((error) => {
+                            reply.send({
+                                output: "error",
+                                message: error.message
                             });
-                        }
+                        });
                     }
                 }).catch((error) => {
                     reply.send({
@@ -1019,8 +993,8 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
-            'Exited', request.body.target_user_id
+        connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
+            request.body.target_user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
                 reply.send({
