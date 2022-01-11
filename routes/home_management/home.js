@@ -232,7 +232,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE UIH.user_id != ? AND UIH.home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE UIH.user_id != ? AND UIH.home_id = ? AND invitation_status != 'Removed' AND invitation_status != 'Exited'", [
             request.query.user_id, request.query.home_id 
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
