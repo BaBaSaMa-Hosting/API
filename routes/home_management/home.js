@@ -159,11 +159,11 @@ module.exports = async (fastify, opts) => {
 
         await connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.query.home_id
-        ]).then(([rows, fields]) => {
+        ]).then( async ([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'user does not have any home registered.'
+                    message: 'home does not exist.'
                 });
                 return;
             }
@@ -171,27 +171,22 @@ module.exports = async (fastify, opts) => {
             let buffer  = new Buffer(rows[0].home_image, 'base64');
             rows[0].home_image = buffer.toString();
             
-            connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id != ? AND invitation_status != 'Exited'", [
+            let users = [];
+            await connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id != ? AND invitation_status != 'Exited'", [
                 request.query.home_id, request.query.user_id
             ]).then(([rows2, fields2]) => {
-                if (rows2.length === 0) {
-                    reply.send({
-                        output: 'error',
-                        message: 'user does not have any home registered.'
-                    });
-                    return;
-                }
-
-                reply.send({
-                    output: "success",
-                    home: rows[0],
-                    users: rows2
-                });
+                users = rows2
             }).catch((error) => {
                 reply.send({
                     output: "error",
                     message: error.message
                 });
+            });
+
+            reply.send({
+                output: "success",
+                home: rows[0],
+                users: users
             });
         }).catch((error) => {
             reply.send({
@@ -397,7 +392,7 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     // update name
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-    fastify.post('/home_management/home/update_name', async function (request, reply) {
+    fastify.post('/home_management/home/update', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
             reply.send({
                 output: 'error',
@@ -415,6 +410,14 @@ module.exports = async (fastify, opts) => {
         }
 
         if (request.body.home_name === undefined || request.body.home_name === null) {
+            reply.send({
+                output: 'error',
+                message: 'home name is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.home_image === undefined || request.body.home_image === null) {
             reply.send({
                 output: 'error',
                 message: 'home name is not passed in.'
@@ -473,8 +476,8 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("UPDATE Homes SET home_name = ? WHERE home_id = ?", [
-            request.body.home_name, request.body.home_id
+        connection.promise().query("UPDATE Homes SET home_name = ?, home_image = ? WHERE home_id = ?", [
+            request.body.home_name, request.body.home_image, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
                 reply.send({
@@ -589,6 +592,23 @@ module.exports = async (fastify, opts) => {
                 return;
             }
         }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
+            request.body.new_user_id, request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'new user already in home'
+                });
+                return;
+            }
+        }).catch((error) => { 
             reply.send({
                 output: "error",
                 message: error.message
