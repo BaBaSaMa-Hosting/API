@@ -838,8 +838,8 @@ module.exports = async (fastify, opts) => {
                     if (rows.length === 0) {
                         connection.promise().query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, '', DEFAULT, DEFAULT)", [
                             request.body.home_id, i
-                        ]).then(([rows, fields]) => {
-                            if (rows.affectedRows === 0) {
+                        ]).then(([rows2, fields]) => {
+                            if (rows2.affectedRows === 0) {
                                 reply.send({
                                     output: 'error',
                                     message: 'fail to add user to home'
@@ -860,29 +860,55 @@ module.exports = async (fastify, opts) => {
                             });
                         });
                     } else {
-                        connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
-                            'Removed', i
-                        ]).then(([rows, fields]) => {
-                            if (rows.affectedRows === 0) {
+                        if (rows[0].invitation_status !== "Exited" && rows[0].invitation_status !== "Removed") {
+                            connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
+                                'Removed', i
+                            ]).then(([rows, fields]) => {
+                                if (rows.affectedRows === 0) {
+                                    reply.send({
+                                        output: 'error',
+                                        message: 'fail to remove user from home'
+                                    });
+                                    return;
+                                }
+                    
                                 reply.send({
-                                    output: 'error',
-                                    message: 'fail to remove user from home'
+                                    output: 'success',
+                                    message: 'user successfully remove from home'
                                 });
-                                return;
-                            }
-                
-                            reply.send({
-                                output: 'success',
-                                message: 'user successfully remove from home'
+    
+                                if (index == user_ids.length) resolve()
+                            }).catch((error) => {
+                                reply.send({
+                                    output: "error",
+                                    message: error.message
+                                });
                             });
-
-                            if (index == user_ids.length) resolve()
-                        }).catch((error) => {
-                            reply.send({
-                                output: "error",
-                                message: error.message
+                        } else {
+                            connection.promise().query("UPDATE User_In_Home SET invitation_status = ? WHERE user_id = ?", [
+                                'Invited', i
+                            ]).then(([rows, fields]) => {
+                                if (rows.affectedRows === 0) {
+                                    reply.send({
+                                        output: 'error',
+                                        message: 'fail to invite user to home'
+                                    });
+                                    return;
+                                }
+                    
+                                reply.send({
+                                    output: 'success',
+                                    message: 'user successfully invited to home'
+                                });
+    
+                                if (index == user_ids.length) resolve()
+                            }).catch((error) => {
+                                reply.send({
+                                    output: "error",
+                                    message: error.message
+                                });
                             });
-                        });
+                        }
                     }
                 }).catch((error) => {
                     reply.send({
