@@ -245,7 +245,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id != ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE user_id != ? AND home_id = ?", [
             request.query.user_id, request.query.home_id 
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -390,7 +390,7 @@ module.exports = async (fastify, opts) => {
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-    // update name
+    // update
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/home/update', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
