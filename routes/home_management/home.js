@@ -820,6 +820,10 @@ module.exports = async (fastify, opts) => {
         await connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id != ?", [
             request.body.home_id, request.body.user_id
         ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                target_user_list = user_ids
+            }
+
             rows.forEach((i, index) => {
                 if (!user_ids.includes(i.user_id)) target_user_list.push(i.user_id);
             })
