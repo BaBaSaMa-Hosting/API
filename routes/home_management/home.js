@@ -851,6 +851,8 @@ module.exports = async (fastify, opts) => {
                                 output: 'success',
                                 message: 'user successfully added into home'
                             });
+
+                            if (index == user_ids.length) resolve()
                         }).catch((error) => {
                             reply.send({
                                 output: "error",
@@ -873,6 +875,8 @@ module.exports = async (fastify, opts) => {
                                 output: 'success',
                                 message: 'user successfully remove from home'
                             });
+
+                            if (index == user_ids.length) resolve()
                         }).catch((error) => {
                             reply.send({
                                 output: "error",
@@ -880,8 +884,6 @@ module.exports = async (fastify, opts) => {
                             });
                         });
                     }
-
-                    if (index == user_ids.length) resolve()
                 }).catch((error) => {
                     reply.send({
                         output: "error",
