@@ -171,22 +171,9 @@ module.exports = async (fastify, opts) => {
             let buffer  = new Buffer(rows[0].home_image, 'base64');
             rows[0].home_image = buffer.toString();
             
-            let users = [];
-            await connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id != ? AND invitation_status != 'Exited'", [
-                request.query.home_id, request.query.user_id
-            ]).then(([rows2, fields2]) => {
-                users = rows2
-            }).catch((error) => {
-                reply.send({
-                    output: "error",
-                    message: error.message
-                });
-            });
-
             reply.send({
                 output: "success",
-                home: rows[0],
-                users: users
+                home: rows[0]
             });
         }).catch((error) => {
             reply.send({
@@ -245,7 +232,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE user_id != ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON U.user_id = UIH.user_id WHERE UIH.user_id != ? AND UIH.home_id = ?", [
             request.query.user_id, request.query.home_id 
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -258,7 +245,7 @@ module.exports = async (fastify, opts) => {
 
             reply.send({
                 output: 'success',
-                home: rows
+                users: rows
             })
         }).catch((error) => {
             reply.send({
