@@ -82,7 +82,7 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
-            rows.forEach(i => {
+            rows.forEach((i, index) => {
                 let buffer  = new Buffer(i.category_image, 'base64');
                 rows[index].category_image = buffer.toString();
             });
