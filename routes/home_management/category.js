@@ -82,6 +82,11 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
+            rows.forEach(i => {
+                let buffer  = new Buffer(i.category_image, 'base64');
+                rows[index].category_image = buffer.toString();
+            });
+
             reply.send({
                 output: "success",
                 categories: rows
