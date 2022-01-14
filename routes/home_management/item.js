@@ -175,26 +175,10 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
-        if (request.body.expiry_date === undefined || request.body.expiry_date === null) {
-            reply.send({
-                output: 'error',
-                message: 'item expiry date is not passed in.'
-            });
-            return;
-        }
-
         if (request.body.category_id === undefined || request.body.category_id === null) {
             reply.send({
                 output: 'error',
                 message: 'item category is not passed in.'
-            });
-            return;
-        }
-
-        if (request.body.item_limit === undefined || request.body.item_limit === null) {
-            reply.send({
-                output: 'error',
-                message: 'item limit is not passed in.'
             });
             return;
         }
@@ -242,7 +226,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
