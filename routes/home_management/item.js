@@ -88,7 +88,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM Items I INNER JOIN Item_Category IC ON I.item_category = IC.category_id WHERE I.home_id = ?", [
+        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND active = 1", [
             request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
