@@ -60,7 +60,7 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'user does not exist.'
+                    message: 'home does not exist.'
                 });
                 return;
             }
