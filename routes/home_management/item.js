@@ -71,7 +71,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.query.user_id, request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -407,7 +407,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -538,7 +538,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -669,7 +669,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -830,7 +830,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -961,7 +961,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE UIH.user_id = ? AND home_id = ?", [
+        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
