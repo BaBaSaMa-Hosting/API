@@ -99,6 +99,11 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
+            rows.forEach((i, index) => {
+                let buffer  = new Buffer(i.item_image, 'base64');
+                rows[index].item_image = buffer.toString();
+            });
+
             reply.send({
                 output: 'success',
                 items: rows
