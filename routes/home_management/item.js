@@ -23,7 +23,7 @@ module.exports = async (fastify, opts) => {
         if (request.query.home_id === undefined || request.query.home_id === null) {
             reply.send({
                 output: 'error',
-                message: 'user id is not passed in.'
+                message: 'home id is not passed in.'
             });
             return;
         }
@@ -55,7 +55,7 @@ module.exports = async (fastify, opts) => {
         });
 
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.query.home
+            request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
