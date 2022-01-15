@@ -707,6 +707,7 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item already reach 0.'
                 });
+                connection.end();
                 return;
             }
         }).catch((error) => {
