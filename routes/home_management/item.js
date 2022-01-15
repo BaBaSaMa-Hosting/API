@@ -717,7 +717,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("UPDATE Items SET item_stock = item_stock - 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
+        connection.promise().query("UPDATE Items SET item_stock = item_stock - 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ? AND item_stock != 0", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
