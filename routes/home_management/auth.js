@@ -20,6 +20,13 @@ module.exports = async (fastify, opts) => {
             return;
         }
 
+        if (request.query.notification_token === undefined || request.query.notification_token === null) {
+            reply.send({
+                output: 'error',
+                message: 'notification token is not passed in'
+            })
+        }
+
         const connection = mysql.createConnection({
             host: process.env.host,
             user: process.env.username,
@@ -29,9 +36,9 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+        await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.query.user_id
-        ]).then(([rows, fields]) => {
+        ]).then( async ([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
                     output: "retry",
@@ -41,6 +48,27 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
+            if (rows[0].user_notification_token != request.query.notification_token) {
+                await connection.promise().query("UPDATE Users SET user_notification_token = ? WHERE user_id = ?", [
+                    request.query.notification_token, request.query.user_id
+                ]).then( async ([rows, fields]) => {
+                    if (rows.affectedRows === 0) {
+                        reply.send({
+                            output: "error",
+                            message: "fail to update user notification token"
+                        });
+                        return;
+                    }
+                }).catch((error) => {
+                    reply.send({
+                        output: "error",
+                        message: error.message
+                    });
+                    connection.end();
+                    return;
+                });
+            }
+            
             reply.send({
                 output: 'success',
                 message: 'user successfully logged in'
@@ -80,7 +108,15 @@ module.exports = async (fastify, opts) => {
         if (request.body.auth_type === undefined || request.body.auth_type === null) {
             reply.send({
                 output: 'error',
-                message: 'user id is not passed in.'
+                message: 'auth type is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.notification_token === undefined || request.body.notification_token === null) {
+            reply.send({
+                output: 'error',
+                message: 'notification is not passed in.'
             });
             return;
         }
@@ -114,8 +150,8 @@ module.exports = async (fastify, opts) => {
             return;
         });
 
-        connection.promise().query("INSERT INTO Users (user_id, display_name, auth_type) VALUES (?, ?, ?)", [
-            request.body.user_id, request.body.display_name, request.body.auth_type 
+        connection.promise().query("INSERT INTO Users (user_id, display_name, auth_type, user_notification_token) VALUES (?, ?, ?, ?)", [
+            request.body.user_id, request.body.display_name, request.body.auth_type, request.body.notification_token
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
                 reply.send({

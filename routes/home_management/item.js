@@ -6,6 +6,7 @@ const mysql = require('mysql2');
 const {
     v4: uuidv4
 } = require('uuid');
+const { admin } = require('./firebase_config');
 
 module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -509,7 +510,8 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+        var user;
+        await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -519,6 +521,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -543,7 +546,30 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
+        const tokens = []
+        await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not belong to home.'
+                });
+                return;
+            }
+
+            rows.forEach(i => {
+                tokens.push(i.user_notification_token)
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.user_id = ? AND UIH.home_id = ?", [
             request.body.user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -560,7 +586,8 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
+        var item;
+        await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -570,6 +597,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            item = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -599,6 +628,11 @@ module.exports = async (fastify, opts) => {
             });
         });
         
+        admin.messaging().sendMulticast({ notification: { title: `${item.item_name} Has Increased in Stock`, body: `${user.display_name} has increase ${item.item_name} value`}, tokens: tokens})
+        .then((response) => {
+            console.log(response.successCount + " message sent successfully")
+        })
+
         connection.end();
         return;
     });
