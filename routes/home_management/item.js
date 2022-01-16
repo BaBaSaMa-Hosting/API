@@ -198,6 +198,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -208,6 +209,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            user = rows[0]
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -225,6 +228,29 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        const tokens = []
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'home does not have any users.'
+                });
+                return;
+            }
+
+            rows.forEach(i => {
+                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
+                    tokens.push(i.user_notification_token)
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -273,6 +299,26 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        const message = {
+            notification: { 
+                title: `${request.body.item_name} Has Been Created`, 
+                body: `${user.display_name} has increase ${item.item_name} value`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
+        console.log(tokens);
+        tokens.forEach(token => {
+            admin.messaging().sendToDevice(token, message, options)
+            .then((response) => {
+                console.log("message sent successfully")
+            }).catch((error) => {
+                console.error(error);
+            });
+        });
 
         connection.end();
         return;
