@@ -640,6 +640,7 @@ module.exports = async (fastify, opts) => {
             priority: "high",
             timeToLive: 60 * 60 * 24
         }
+        console.log(tokens);
         tokens.forEach(token => {
             admin.messaging().sendToDevice(token, message, options)
             .then((response) => {
