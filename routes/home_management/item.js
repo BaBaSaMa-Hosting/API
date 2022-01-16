@@ -628,8 +628,20 @@ module.exports = async (fastify, opts) => {
                 message: error.message
             });
         });
+
+        const message = {
+            // notification: { 
+            //     title: `${item.item_name} Has Increased in Stock`, 
+            //     body: `${user.display_name} has increase ${item.item_name} value`
+            // }, 
+            data: {
+                score: "850", 
+                time: "2.45"
+            },
+            tokens: tokens
+        }
         
-        admin.messaging().sendMulticast({ notification: { title: `${item.item_name} Has Increased in Stock`, body: `${user.display_name} has increase ${item.item_name} value`}, tokens: tokens})
+        admin.messaging().sendMulticast(message)
         .then((response) => {
             console.log(response.successCount + " message sent successfully")
         })
