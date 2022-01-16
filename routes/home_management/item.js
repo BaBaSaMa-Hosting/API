@@ -559,7 +559,7 @@ module.exports = async (fastify, opts) => {
             }
 
             rows.forEach(i => {
-                if (i.user_notification_token != "")
+                if (i.user_notification_token != "" || i.user_notification_token != null || i.user_notification_token != undefined)
                     tokens.push(i.user_notification_token)
             });
         }).catch((error) => {
