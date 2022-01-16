@@ -559,7 +559,8 @@ module.exports = async (fastify, opts) => {
             }
 
             rows.forEach(i => {
-                tokens.push(i.user_notification_token)
+                if (i.user_notification_token != "")
+                    tokens.push(i.user_notification_token)
             });
         }).catch((error) => {
             reply.send({
