@@ -526,6 +526,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -536,6 +537,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -543,6 +546,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -561,6 +565,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -568,6 +573,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var new_user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.new_user_id
         ]).then(([rows, fields]) => {
@@ -578,6 +584,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            new_user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -641,6 +648,30 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        if (new_user.user_notification_token == null || new_user.user_notification_token == undefined || new_user.user_notification_token == "") {
+            connection.end();
+            return;
+        }
+
+        const message = {
+            notification: { 
+                title: `${user.display_name} Has Invited You Into Their Home`, 
+                body: `${new_user.display_name}, Welcome to ${home.home_name}`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
+
+        admin.messaging().sendToDevice(new_user.user_notification_token, message, options)
+        .then((response) => {
+            console.log("message sent successfully")
+        }).catch((error) => {
+            console.error(error);
+        });
+
         connection.end();
         return;
     });
@@ -674,6 +705,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -684,6 +716,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -691,6 +724,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -701,6 +735,26 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        var owner;
+        connection.promise().query("SELECT * FROM Homes H INNER JOIN Users U WHERE H.created_by = U.user_id WHERE home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'home does not exist'
+                });
+                return;
+            }
+
+            owner = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -730,6 +784,25 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        const message = {
+            notification: { 
+                title: `${user.display_name} Has Joined Your Home`, 
+                body: `${home.home_name} Has a New Member, ${user.display_name}`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
+
+        admin.messaging().sendToDevice(owner.user_notification_token, message, options)
+        .then((response) => {
+            console.log("message sent successfully")
+        }).catch((error) => {
+            console.error(error);
+        });
+        
         connection.end();
         return;
     });
@@ -773,6 +846,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -783,6 +857,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -836,7 +911,7 @@ module.exports = async (fastify, opts) => {
 
         new Promise ((resolve, reject) => {
             target_user_list.forEach((i, index) => {
-                connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ? AND user_id = ?", [
+                connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.home_id = ? AND UIH.user_id = ?", [
                     request.body.home_id, i
                 ]).then(([rows, fields]) => {
                     if (rows.length === 0) {
@@ -854,6 +929,25 @@ module.exports = async (fastify, opts) => {
                             reply.send({
                                 output: 'success',
                                 message: 'user successfully added into home'
+                            });
+
+                            const message = {
+                                notification: { 
+                                    title: `${user.display_name} Has Invited You Into Their Home`, 
+                                    body: `${rows[0].display_name}, Welcome to ${rows[0].home_name}`
+                                }
+                            }
+                    
+                            const options = {
+                                priority: "high",
+                                timeToLive: 60 * 60 * 24
+                            }
+                    
+                            admin.messaging().sendToDevice(rows[0].user_notification_token, message, options)
+                            .then((response) => {
+                                console.log("message sent successfully")
+                            }).catch((error) => {
+                                console.error(error);
                             });
 
                             if (index == user_ids.length) resolve()
@@ -878,6 +972,25 @@ module.exports = async (fastify, opts) => {
                             reply.send({
                                 output: 'success',
                                 message: 'user successfully remove from home'
+                            });
+
+                            const message = {
+                                notification: { 
+                                    title: `You Has Remove From Home ${rows[0].home_name}`, 
+                                    body: `Good Bye`
+                                }
+                            }
+                    
+                            const options = {
+                                priority: "high",
+                                timeToLive: 60 * 60 * 24
+                            }
+                    
+                            admin.messaging().sendToDevice(rows[0].user_notification_token, message, options)
+                            .then((response) => {
+                                console.log("message sent successfully")
+                            }).catch((error) => {
+                                console.error(error);
                             });
 
                             if (index == user_ids.length) resolve()
@@ -955,6 +1068,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -973,6 +1087,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -980,6 +1095,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.target_user_id
         ]).then(([rows, fields]) => {
@@ -990,6 +1106,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -1017,6 +1134,25 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 message: error.message
             });
+        });
+
+        const message = {
+            notification: { 
+                title: `You Has Remove From Home ${home.home_name}`, 
+                body: `Good Bye`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
+
+        admin.messaging().sendToDevice(user.user_notification_token, message, options)
+        .then((response) => {
+            console.log("message sent successfully")
+        }).catch((error) => {
+            console.error(error);
         });
 
         connection.end();

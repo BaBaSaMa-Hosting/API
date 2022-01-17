@@ -218,6 +218,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -228,6 +229,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -302,7 +305,7 @@ module.exports = async (fastify, opts) => {
         const message = {
             notification: { 
                 title: `${request.body.item_name} Has Been Created`, 
-                body: `${user.display_name} has increase ${item.item_name} value`
+                body: `${user.display_name} Created ${request.body.item_name} at Home ${home.home_name}.`
             }
         }
 
@@ -310,7 +313,7 @@ module.exports = async (fastify, opts) => {
             priority: "high",
             timeToLive: 60 * 60 * 24
         }
-        console.log(tokens);
+
         tokens.forEach(token => {
             admin.messaging().sendToDevice(token, message, options)
             .then((response) => {
@@ -425,6 +428,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -435,6 +439,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -442,6 +448,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -452,6 +459,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -476,6 +485,30 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        const tokens = [];
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE  UIH.home_id = ?", [
+            request.body.user_id, request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not belong to home.'
+                });
+                return;
+            }
+
+            rows.forEach(i => {
+                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
+                    tokens.push(i.user_notification_token)
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        var item;
         connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
@@ -486,6 +519,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            item = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -507,6 +542,27 @@ module.exports = async (fastify, opts) => {
             reply.send({
                 output: 'success',
                 message: 'successfully updated item'
+            });
+
+            const message = {
+                notification: { 
+                    title: `${item.item_name} Has Been Updated`, 
+                    body: `Item ${item.item_name} Have Been Updated in Home ${home.home_name} By ${user.display_name}.`
+                }
+            }
+    
+            const options = {
+                priority: "high",
+                timeToLive: 60 * 60 * 24
+            }
+            
+            tokens.forEach(token => {
+                admin.messaging().sendToDevice(token, message, options)
+                .then((response) => {
+                    console.log("message sent successfully")
+                }).catch((error) => {
+                    console.error(error);
+                });
             });
         }).catch((error) => {
             reply.send({
@@ -556,7 +612,6 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        var user;
         await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -567,7 +622,6 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
-            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -592,7 +646,6 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        const tokens = []
         await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -603,11 +656,6 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
-
-            rows.forEach(i => {
-                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
-                    tokens.push(i.user_notification_token)
-            });
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -633,7 +681,6 @@ module.exports = async (fastify, opts) => {
             });
         });
 
-        var item;
         await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
@@ -645,7 +692,6 @@ module.exports = async (fastify, opts) => {
                 return;
             }
 
-            item = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -672,27 +718,6 @@ module.exports = async (fastify, opts) => {
             reply.send({
                 output: "error",
                 message: error.message
-            });
-        });
-
-        const message = {
-            notification: { 
-                title: `${item.item_name} Has Increased in Stock`, 
-                body: `${user.display_name} has increase ${item.item_name} value`
-            }
-        }
-
-        const options = {
-            priority: "high",
-            timeToLive: 60 * 60 * 24
-        }
-        console.log(tokens);
-        tokens.forEach(token => {
-            admin.messaging().sendToDevice(token, message, options)
-            .then((response) => {
-                console.log("message sent successfully")
-            }).catch((error) => {
-                console.error(error);
             });
         });
 
@@ -737,6 +762,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -747,6 +773,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -754,6 +781,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -764,6 +792,7 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -788,6 +817,30 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        const tokens = [];
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE  UIH.home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not belong to home.'
+                });
+                return;
+            }
+
+            rows.forEach(i => {
+                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
+                    tokens.push(i.user_notification_token)
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        var item;
         connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
@@ -807,6 +860,8 @@ module.exports = async (fastify, opts) => {
                 connection.end();
                 return;
             }
+
+            item = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -843,8 +898,26 @@ module.exports = async (fastify, opts) => {
             }
 
             if (rows[0].item_limit >= rows[0].item_stock) {
-                //alert the family, send notification
-
+                const message = {
+                    notification: { 
+                        title: `${item.item_name} Has Reach Item Limit`, 
+                        body: `Item ${item.item_name} Have Only ${item.item_stock} Left in Home ${home.home_name}.`
+                    }
+                }
+        
+                const options = {
+                    priority: "high",
+                    timeToLive: 60 * 60 * 24
+                }
+                
+                tokens.forEach(token => {
+                    admin.messaging().sendToDevice(token, message, options)
+                    .then((response) => {
+                        console.log("message sent successfully")
+                    }).catch((error) => {
+                        console.error(error);
+                    });
+                });
             }
 
             reply.send({
@@ -900,6 +973,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -910,6 +984,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -917,6 +993,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -927,6 +1004,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -951,6 +1030,30 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        const tokens = [];
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not belong to home.'
+                });
+                return;
+            }
+
+            rows.forEach(i => {
+                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
+                    tokens.push(i.user_notification_token)
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        var item;
         connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
@@ -961,6 +1064,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+            
+            item = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -987,6 +1092,27 @@ module.exports = async (fastify, opts) => {
             reply.send({
                 output: "error",
                 message: error.message
+            });
+        });
+
+        const message = {
+            notification: { 
+                title: `${item.item_name} Has Been Disabled`, 
+                body: `Item ${item.item_name} Have Been Disabled in Home ${home.home_name} By ${user.display_name}.`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
+        
+        tokens.forEach(token => {
+            admin.messaging().sendToDevice(token, message, options)
+            .then((response) => {
+                console.log("message sent successfully")
+            }).catch((error) => {
+                console.error(error);
             });
         });
         
@@ -1031,6 +1157,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
+        var user;
         connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
@@ -1041,6 +1168,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            user = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -1048,6 +1177,7 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        var home;
         connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
             request.body.home_id
         ]).then(([rows, fields]) => {
@@ -1058,6 +1188,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            home = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -1082,6 +1214,30 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        const tokens = [];
+        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
+            request.body.user_id, request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not belong to home.'
+                });
+                return;
+            }
+
+            rows.forEach(i => {
+                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
+                    tokens.push(i.user_notification_token)
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        var item;
         connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
@@ -1092,6 +1248,8 @@ module.exports = async (fastify, opts) => {
                 });
                 return;
             }
+
+            item = rows[0];
         }).catch((error) => {
             reply.send({
                 output: "error",
@@ -1118,6 +1276,27 @@ module.exports = async (fastify, opts) => {
             reply.send({
                 output: "error",
                 message: error.message
+            });
+        });
+
+        const message = {
+            notification: { 
+                title: `${item.item_name} Has Been Enabled`, 
+                body: `Item ${item.item_name} Have Been Disabled in Home ${home.home_name} By ${user.display_name}.`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
+        
+        tokens.forEach(token => {
+            admin.messaging().sendToDevice(token, message, options)
+            .then((response) => {
+                console.log("message sent successfully")
+            }).catch((error) => {
+                console.error(error);
             });
         });
         
