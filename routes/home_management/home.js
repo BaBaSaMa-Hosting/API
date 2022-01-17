@@ -349,6 +349,91 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on) VALUES (?, '242c1439-fe45-42ff-af17-92d3c240ec96', DEFAULT, ?, DEFAULT, ?, DEFAULT);", [
+            new_home_id, request.body.user_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'fail to add default category'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on) VALUES (?, '2d776bca-6c07-4b61-9d4c-e916b76ce42a', DEFAULT, ?, DEFAULT, ?, DEFAULT);", [
+            new_home_id, request.body.user_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'fail to add default category'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on) VALUES (?, '68792937-db58-485a-bfc6-1856b243407e', DEFAULT, ?, DEFAULT, ?, DEFAULT);", [
+            new_home_id, request.body.user_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'fail to add default category'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on) VALUES (?, '9aa2e39b-eb4d-4689-9aa3-46d20c49250e', DEFAULT, ?, DEFAULT, ?, DEFAULT);", [
+            new_home_id, request.body.user_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'fail to add default category'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on) VALUES (?, 'c60bc19e-be0a-40ef-950c-fe8136018bf7', DEFAULT, ?, DEFAULT, ?, DEFAULT);", [
+            new_home_id, request.body.user_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'fail to add default category'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
         connection.promise().query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, 'Home Owner', 'Staying', DEFAULT)", [
             new_home_id, request.body.user_id
         ]).then(([rows, fields]) => {

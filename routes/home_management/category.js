@@ -103,6 +103,86 @@ module.exports = async (fastify, opts) => {
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // add category to home
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    fastify.post('/home_management/category/add', async function (request, reply) {
+        if (request.body.user_id === undefined || request.body.user_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.home_id === undefined || request.body.home_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        if (request.body.category_id === undefined || request.body.category_id === null) {
+            reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+            return;
+        }
+
+        const connection = mysql.createConnection({
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
+        });
+
+        connection.connect();
+
+        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+            request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'user does not exist.'
+                });
+                return;
+            }
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on)VALUES (?, ?, DEFAULT, ?, DEFAULT, ?, DEFAULT)", [
+            request.body.home_id, request.body.category_id, request.body.user_id, request.body.user_id
+        ]).then(([rows, fields]) => {
+            if (rows.affectedRows === 0) {
+                reply.send({
+                    output: 'error',
+                    message: 'adding category to home failed'
+                });
+                return;
+            }
+            
+            reply.send({
+                output: 'success',
+                message: 'successfully added category to home'
+            });
+        }).catch((error) => {
+            reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
+        connection.end();
+        return;
+    });
+
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     // create new category
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/category/create', async function (request, reply) {
