@@ -7,6 +7,9 @@ const {
     v4: uuidv4
 } = require('uuid');
 
+const { check_user_exist } = require('./common_query');
+const { get_user_details } = require('./notification_information');
+
 module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     // get display name
@@ -29,27 +32,15 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.query.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: "error",
-                    message: "user does not exist."
-                });
-                return;
-            }
+        if (await check_user_exist(reply, connection, request.query.user_id)) {
+            const user = await get_user_details(reply, connection, request.query.user_id);
+            if (user.length === 0) return;
 
             reply.send({
                 output: "success",
-                display_name: rows[0].display_name
+                display_name: user[0].display_name
             })
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        })
+        }
 
         connection.end();
         return;
@@ -83,25 +74,10 @@ module.exports = async (fastify, opts) => {
         });
 
         connection.connect();
+        
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.query.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: "error",
-                    message: "user does not exist"
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Users SET display_name = ? WHERE user_id = ?", [
+        await connection.promise().query("UPDATE Users SET display_name = ? WHERE user_id = ?", [
             request.body.new_display_name, request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
@@ -109,6 +85,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'user register failure'
                 });
+                
+                connection.end();
                 return;
             }
 
@@ -116,15 +94,18 @@ module.exports = async (fastify, opts) => {
                 output: 'success',
                 message: 'user display name successfully updated'
             });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -148,24 +129,9 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.query.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: "error",
-                    message: "user does not exist"
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_exist(reply, connection, request.query.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
+        await connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -173,21 +139,26 @@ module.exports = async (fastify, opts) => {
                     output: "error",
                     message: "no user retrieved"
                 });
+
+                connection.end();
                 return;
             }
 
             reply.send({
                 output: 'success',
                 users: rows
-            })
+            });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        })
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 }

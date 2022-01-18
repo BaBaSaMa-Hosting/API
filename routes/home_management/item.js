@@ -6,6 +6,9 @@ const mysql = require('mysql2');
 const {
     v4: uuidv4
 } = require('uuid');
+
+const { check_user_exist, check_home_exist, check_user_in_home, check_item_exist } = require('./common_query');
+const { get_user_details, get_home_details, get_home_users_details } = require('./notification_information');
 const { admin } = require('./firebase_config');
 
 module.exports = async (fastify, opts) => {
@@ -37,59 +40,14 @@ module.exports = async (fastify, opts) => {
         });
 
         connection.connect();
+        
+        if (!await check_user_exist(reply, connection, request.query.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.query.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.query.home_id)) return;
 
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.query.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.query.home_id, request.query.user_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.query.user_id, request.query.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND active = 1", [
+        await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND active = 1", [
             request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -97,28 +55,36 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'home does not have any item.'
                 });
+
+                connection.end();
                 return;
             }
 
-            rows.forEach((i, index) => {
-                let buffer  = new Buffer(i.item_image, 'base64');
-                rows[index].item_image = buffer.toString();
-            });
+            new Promise((resolve, reject) => {
+                rows.forEach((i, index) => {
+                    let buffer  = new Buffer(i.item_image, 'base64');
+                    rows[index].item_image = buffer.toString();
 
-            reply.send({
-                output: 'success',
-                items: rows
-            });
+                    if (index === rows.length) resolve();
+                });
+            }).then(() => {
+                reply.send({
+                    output: 'success',
+                    items: rows
+                });
 
+                connection.end();
+                return;
+            });
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -198,85 +164,11 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        var user;
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-            user = rows[0]
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        var home;
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
-
-            home = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        const tokens = []
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not have any users.'
-                });
-                return;
-            }
-
-            rows.forEach(i => {
-                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
-                    tokens.push(i.user_notification_token)
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
         let new_item_id = uuidv4();
 
@@ -286,26 +178,35 @@ module.exports = async (fastify, opts) => {
             if (rows.length === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'user does not belong to home.'
+                    message: 'item creation failure.'
                 });
+
+                connection.end();
                 return;
             }
-
-            reply.send({
-                output: 'success',
-                message: 'successfully added new item'
-            });
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
+
+            connection.end();
+            return;
         });
+
+        const user = await get_user_details(reply, connection, request.body.user_id);
+        if (user.length === 0) return;
+
+        const home = await get_home_details(reply, connection, request.body.home_id);
+        if (home.length === 0) return;
+
+        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
+        if (users.length === 0) return;
 
         const message = {
             notification: { 
-                title: `${request.body.item_name} Has Been Created`, 
-                body: `${user.display_name} Created ${request.body.item_name} at Home ${home.home_name}.`
+                title: `${home[0].home_name} Have New Item!`, 
+                body: `${request.body.item_name} Has Been Created By ${user[0].display_name}`
             }
         }
 
@@ -314,13 +215,21 @@ module.exports = async (fastify, opts) => {
             timeToLive: 60 * 60 * 24
         }
 
-        tokens.forEach(token => {
-            admin.messaging().sendToDevice(token, message, options)
+        for (let _user in users) {
+            if (_user.user_notification_token === "" || _user.user_notification_token === null || _user.user_notification_token === undefined)
+                continue;
+
+            admin.messaging().sendToDevice(_user.user_notification_token, message, options)
             .then((response) => {
                 console.log("message sent successfully")
             }).catch((error) => {
                 console.error(error);
             });
+        }
+
+        reply.send({
+            output: 'success',
+            message: 'successfully added created new item'
         });
 
         connection.end();
@@ -428,107 +337,16 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        var user;
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
+       
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-            user = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        var home;
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
-            
-            home = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
 
-        const tokens = [];
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE  UIH.home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-
-            rows.forEach(i => {
-                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
-                    tokens.push(i.user_notification_token)
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        var item;
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
-            request.body.home_id, request.body.item_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'item does not exist.'
-                });
-                return;
-            }
-
-            item = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Items SET item_name = ?, item_description = ?, item_image = ?, item_cost = ?, item_stock = ?, item_expiry_date = ?, item_category = ?, item_limit = ?, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
+        await connection.promise().query("UPDATE Items SET item_name = ?, item_description = ?, item_image = ?, item_cost = ?, item_stock = ?, item_expiry_date = ?, item_category = ?, item_limit = ?, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.item_name, request.body.item_description, request.body.item_image, request.body.item_cost, request.body.item_stock, request.body.expiry_date, request.body.category_id, request.body.item_limit, request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -536,41 +354,58 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item failed to update'
                 });
+                
+                connection.end();
                 return;
             }
-
-            reply.send({
-                output: 'success',
-                message: 'successfully updated item'
-            });
-
-            const message = {
-                notification: { 
-                    title: `${item.item_name} Has Been Updated`, 
-                    body: `Item ${item.item_name} Have Been Updated in Home ${home.home_name} By ${user.display_name}.`
-                }
-            }
-    
-            const options = {
-                priority: "high",
-                timeToLive: 60 * 60 * 24
-            }
-            
-            tokens.forEach(token => {
-                admin.messaging().sendToDevice(token, message, options)
-                .then((response) => {
-                    console.log("message sent successfully")
-                }).catch((error) => {
-                    console.error(error);
-                });
-            });
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
+                
+            connection.end();
+            return;
         });
+
+        const user = await get_user_details(reply, connection, request.body.user_id);
+        if (user.length === 0) return;
+
+        const home = await get_home_details(reply, connection, request.body.home_id);
+        if (home.length === 0) return;
+
+        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
+        if (users.length === 0) return;
+
+        const message = {
+            notification: { 
+                title: `${item[0].item_name} Has Been Updated!`, 
+                body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Been Updated By ${user[0].display_name}.`
+            }
+        }
+
+        const options = {
+            priority: "high",
+            timeToLive: 60 * 60 * 24
+        }
         
+        for (let _user in users) {
+            if (_user.user_notification_token === "" || _user.user_notification_token === null || _user.user_notification_token === undefined)
+                continue;
+
+            admin.messaging().sendToDevice(_user.user_notification_token, message, options)
+            .then((response) => {
+                console.log("message sent successfully")
+            }).catch((error) => {
+                console.error(error);
+            });
+        }
+
+        reply.send({
+            output: 'success',
+            message: 'successfully updated item'
+        });
+
         connection.end();
         return;
     });
@@ -612,94 +447,15 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.user_id = ? AND UIH.home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
-            request.body.home_id, request.body.item_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'item does not exist.'
-                });
-                return;
-            }
-
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Items SET item_stock = item_stock + 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
+        await connection.promise().query("UPDATE Items SET item_stock = item_stock + 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -707,6 +463,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item failed to update'
                 });
+
+                connection.end();
                 return;
             }
 
@@ -714,15 +472,18 @@ module.exports = async (fastify, opts) => {
                 output: 'success',
                 message: 'successfully updated item'
             });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -762,114 +523,15 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        var user;
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-            user = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-        var home;
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
-            home = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
-        const tokens = [];
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE  UIH.home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
 
-            rows.forEach(i => {
-                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
-                    tokens.push(i.user_notification_token)
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        var item;
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
-            request.body.home_id, request.body.item_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'item does not exist.'
-                });
-                return;
-            }
-
-            if (rows[0].item_stock === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'item already reach 0.'
-                });
-                connection.end();
-                return;
-            }
-
-            item = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Items SET item_stock = item_stock - 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ? AND item_stock != 0", [
+        await connection.promise().query("UPDATE Items SET item_stock = item_stock - 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ? AND item_stock != 0", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -877,6 +539,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item failed to update'
                 });
+        
+                connection.end();
                 return;
             }
         }).catch((error) => {
@@ -884,9 +548,21 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 message: error.message
             });
+        
+            connection.end();
+            return;
         });
 
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
+        const user = await get_user_details(reply, connection, request.body.user_id);
+        if (user.length === 0) return;
+
+        const home = await get_home_details(reply, connection, request.body.home_id);
+        if (home.length === 0) return;
+
+        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
+        if (users.length === 0) return;
+
+        await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -894,14 +570,16 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item does not exist.'
                 });
+        
+                connection.end();
                 return;
             }
 
-            if (rows[0].item_limit >= rows[0].item_stock) {
+            if (rows[0].item_limit > rows[0].item_stock) {
                 const message = {
                     notification: { 
-                        title: `${item.item_name} Has Reach Item Limit`, 
-                        body: `Item ${item.item_name} Have Only ${item.item_stock} Left in Home ${home.home_name}.`
+                        title: `${item[0].item_name} Gone Below a Set Limit`, 
+                        body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Only ${item[0].item_stock} Left.`
                     }
                 }
         
@@ -910,30 +588,35 @@ module.exports = async (fastify, opts) => {
                     timeToLive: 60 * 60 * 24
                 }
                 
-                tokens.forEach(token => {
-                    admin.messaging().sendToDevice(token, message, options)
+                for (let _user in users) {
+                    if (_user.user_notification_token === "" || _user.user_notification_token === null || _user.user_notification_token === undefined)
+                        continue;
+        
+                    admin.messaging().sendToDevice(_user.user_notification_token, message, options)
                     .then((response) => {
                         console.log("message sent successfully")
                     }).catch((error) => {
                         console.error(error);
                     });
-                });
+                }
             }
 
             reply.send({
                 output: 'success',
                 message: 'item successfully updated'
             });
-
+        
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
         
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -973,107 +656,15 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        var user;
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-            user = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        var home;
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
-            home = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        const tokens = [];
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-
-            rows.forEach(i => {
-                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
-                    tokens.push(i.user_notification_token)
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        var item;
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
-            request.body.home_id, request.body.item_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'item does not exist.'
-                });
-                return;
-            }
-            
-            item = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Items SET active = 0, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
+        await connection.promise().query("UPDATE Items SET active = 0, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -1081,24 +672,33 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item failed to update'
                 });
+
+                connection.end();
                 return;
             }
-
-            reply.send({
-                output: 'success',
-                message: 'successfully updated item'
-            });
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
+
+            connection.end();
+            return;
         });
+
+        const user = await get_user_details(reply, connection, request.body.user_id);
+        if (user.length === 0) return;
+
+        const home = await get_home_details(reply, connection, request.body.home_id);
+        if (home.length === 0) return;
+
+        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
+        if (users.length === 0) return;
 
         const message = {
             notification: { 
-                title: `${item.item_name} Has Been Disabled`, 
-                body: `Item ${item.item_name} Have Been Disabled in Home ${home.home_name} By ${user.display_name}.`
+                title: `${item[0].item_name} Has Been Disabled`, 
+                body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Been Disabled By ${user[0].display_name}.`
             }
         }
 
@@ -1107,13 +707,21 @@ module.exports = async (fastify, opts) => {
             timeToLive: 60 * 60 * 24
         }
         
-        tokens.forEach(token => {
-            admin.messaging().sendToDevice(token, message, options)
+        for (let _user in users) {
+            if (_user.user_notification_token === "" || _user.user_notification_token === null || _user.user_notification_token === undefined)
+                continue;
+
+            admin.messaging().sendToDevice(_user.user_notification_token, message, options)
             .then((response) => {
                 console.log("message sent successfully")
             }).catch((error) => {
                 console.error(error);
             });
+        }
+
+        reply.send({
+            output: 'success',
+            message: 'successfully updated item'
         });
         
         connection.end();
@@ -1157,107 +765,15 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        var user;
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-            user = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        var home;
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'home does not exist.'
-                });
-                return;
-            }
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
-            home = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        const tokens = [];
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong to home.'
-                });
-                return;
-            }
-
-            rows.forEach(i => {
-                if (i.user_notification_token != "" && i.user_notification_token != null && i.user_notification_token != undefined)
-                    tokens.push(i.user_notification_token)
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        var item;
-        connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
-            request.body.home_id, request.body.item_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'item does not exist.'
-                });
-                return;
-            }
-
-            item = rows[0];
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Items SET active = 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
+        await connection.promise().query("UPDATE Items SET active = 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -1265,24 +781,33 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item failed to update'
                 });
+        
+                connection.end();
                 return;
             }
-
-            reply.send({
-                output: 'success',
-                message: 'successfully updated item'
-            });
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
+        
+            connection.end();
+            return;
         });
+
+        const user = await get_user_details(reply, connection, request.body.user_id);
+        if (user.length === 0) return;
+
+        const home = await get_home_details(reply, connection, request.body.home_id);
+        if (home.length === 0) return;
+
+        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
+        if (users.length === 0) return;
 
         const message = {
             notification: { 
-                title: `${item.item_name} Has Been Enabled`, 
-                body: `Item ${item.item_name} Have Been Disabled in Home ${home.home_name} By ${user.display_name}.`
+                title: `${item[0].item_name} Has Been Enabled`, 
+                body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Been Enabled By ${user[0].display_name}.`
             }
         }
 
@@ -1291,15 +816,23 @@ module.exports = async (fastify, opts) => {
             timeToLive: 60 * 60 * 24
         }
         
-        tokens.forEach(token => {
-            admin.messaging().sendToDevice(token, message, options)
+        for (let _user in users) {
+            if (_user.user_notification_token === "" || _user.user_notification_token === null || _user.user_notification_token === undefined)
+                continue;
+
+            admin.messaging().sendToDevice(_user.user_notification_token, message, options)
             .then((response) => {
                 console.log("message sent successfully")
             }).catch((error) => {
                 console.error(error);
             });
+        }
+
+        reply.send({
+            output: 'success',
+            message: 'successfully updated item'
         });
-        
+
         connection.end();
         return;
     });

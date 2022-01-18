@@ -7,6 +7,8 @@ const {
     v4: uuidv4
 } = require('uuid');
 
+const { check_user_exist, check_home_exist, check_user_in_home, check_category_in_home, adding_category_into_home } = require('./common_query');
+
 module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     // get list of category
@@ -37,48 +39,22 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.query.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_exist(reply, connection, request.query.user_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? AND UIH.home_id = ?", [
-            request.query.user_id, request.query.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not have any home registered.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.query.home_id)) return;
 
-        connection.promise().query("SELECT * FROM Home_Have_Item_Category HHIC INNER JOIN Item_Category IC ON HHIC.category_id = IC.category_id WHERE HHIC.home_id = ? AND HHIC.active != 0", [
+        if (!await check_user_in_home(reply, connection, request.query.home_id, request.query.user_id)) return;
+
+        await connection.promise().query("SELECT * FROM Home_Have_Item_Category HHIC INNER JOIN Item_Category IC ON HHIC.category_id = IC.category_id WHERE HHIC.home_id = ? AND HHIC.active != 0", [
             request.query.home_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'Home does not have any category'
+                    message: 'home does not have any category'
                 });
+
+                connection.end();
                 return;
             }
 
@@ -91,15 +67,18 @@ module.exports = async (fastify, opts) => {
                 output: "success",
                 categories: rows
             });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -139,14 +118,22 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+
+        await connection.promise().query("SELECT * FROM Item_Category WHERE category_id = ?", [
+            request.body.category_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'user does not exist.'
+                    message: 'category does not exist'
                 });
+    
+                connection.end();
                 return;
             }
         }).catch((error) => {
@@ -154,28 +141,16 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 message: error.message
             });
+    
+            connection.end();
+            return;
         });
 
-        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on)VALUES (?, ?, DEFAULT, ?, DEFAULT, ?, DEFAULT)", [
-            request.body.home_id, request.body.category_id, request.body.user_id, request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.affectedRows === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'adding category to home failed'
-                });
-                return;
-            }
-            
-            reply.send({
-                output: 'success',
-                message: 'successfully added category to home'
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
+        if (!await adding_category_into_home(reply, connection, request.body.home_id, request.body.user_id, request.body.category_id)) return;
+
+        reply.send({
+            output: 'success',
+            message: 'successfully added category to home'
         });
 
         connection.end();
@@ -227,14 +202,22 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+
+        await connection.promise().query("SELECT * FROM Item_Category WHERE category_name = ?", [
+            request.body.category_name
         ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
+            if (rows.length > 0) {
                 reply.send({
                     output: 'error',
-                    message: 'user does not exist.'
+                    message: 'category name already exist'
                 });
+    
+                connection.end();
                 return;
             }
         }).catch((error) => {
@@ -242,11 +225,14 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 message: error.message
             });
+    
+            connection.end();
+            return;
         });
 
         let new_category_id = uuidv4();
 
-        connection.promise().query("INSERT INTO Item_Category (category_id, category_name, category_image) VALUES (?, ?, ?)", [
+        await connection.promise().query("INSERT INTO Item_Category (category_id, category_name, category_image) VALUES (?, ?, ?)", [
             new_category_id, request.body.category_name, request.body.category_image
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
@@ -254,6 +240,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'category creation failed'
                 });
+    
+                connection.end();
                 return;
             }
         }).catch((error) => {
@@ -261,29 +249,17 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 message: error.message
             });
+    
+            connection.end();
+            return;
         });
 
-        connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on)VALUES (?, ?, DEFAULT, ?, DEFAULT, ?, DEFAULT)", [
-            request.body.home_id, new_category_id, request.body.user_id, request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.affectedRows === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'adding category to home failed'
-                });
-                return;
-            }
-            
-            reply.send({
-                output: 'success',
-                message: 'category creation success',
-                home_id: new_category_id
-            });
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
+        if (!await adding_category_into_home(reply, connection, request.body.home_id, request.body.user_id, new_category_id)) return;
+
+        reply.send({
+            output: 'success',
+            message: 'category creation success',
+            home_id: new_category_id
         });
 
         connection.end();
@@ -342,76 +318,16 @@ module.exports = async (fastify, opts) => {
         });
 
         connection.connect();
+        
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        
+        if (!await check_category_in_home(reply, connection, request.body.home_id, request.body.category_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong in home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("SELECT * FROM Home_Have_Item_Category WHERE home_id = ? AND category_id = ?", [
-            request.body.home_id, new_category_id, request.body.user_id, request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'category does not belong in home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Item_Category SET category_name = ?, category_image = ? WHERE category_id = ?", [
+        await connection.promise().query("UPDATE Item_Category SET category_name = ?, category_image = ? WHERE category_id = ?", [
             request.body.category_name, request.body.category_image, request.body.category_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
@@ -419,6 +335,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item category update failure'
                 });
+
+                connection.end();
                 return;
             }
         }).catch((error) => {
@@ -426,9 +344,12 @@ module.exports = async (fastify, opts) => {
                 output: "error",
                 message: error.message
             });
+
+            connection.end();
+            return;
         });
 
-        connection.promise().query("UPDATE Home_Have_Item_Category SET updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND category_id = ?", [
+        await connection.promise().query("UPDATE Home_Have_Item_Category SET updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND category_id = ?", [
             request.body.user_id, request.body.home_id, request.body.category_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
@@ -436,6 +357,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'home have category update failure'
                 });
+
+                connection.end();
                 return;
             }
 
@@ -443,15 +366,18 @@ module.exports = async (fastify, opts) => {
                 output: 'success',
                 message: 'category update successfully'
             });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -491,73 +417,13 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong in home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Home_Have_Item_Category WHERE home_id = ? AND category_id = ?", [
-            request.body.home_id, new_category_id, request.body.user_id, request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'category does not belong in home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_category_in_home(reply, connection, request.body.home_id, request.body.category_id)) return;
 
         connection.promise().query("UPDATE Home_Have_Item_Category SET active = 0, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND category_id = ?", [
             request.body.user_id, request.body.home_id, request.body.category_id
@@ -567,6 +433,8 @@ module.exports = async (fastify, opts) => {
                     output: 'error',
                     message: 'item category disabled failure'
                 });
+
+                connection.end();
                 return;
             }
 
@@ -574,15 +442,18 @@ module.exports = async (fastify, opts) => {
                 output: 'success',
                 message: 'item category disabled success'
             });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -621,98 +492,43 @@ module.exports = async (fastify, opts) => {
         });
 
         connection.connect();
+        
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
-            request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
 
-        connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-            request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not exist.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
 
-        connection.promise().query("SELECT * FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-            request.body.user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'user does not belong in home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        if (!await check_category_in_home(reply, connection, request.body.home_id, request.body.category_id)) return;
 
-        connection.promise().query("SELECT * FROM Home_Have_Item_Category WHERE home_id = ? AND category_id = ?", [
-            request.body.home_id, new_category_id, request.body.user_id, request.body.user_id
-        ]).then(([rows, fields]) => {
-            if (rows.length === 0) {
-                reply.send({
-                    output: 'error',
-                    message: 'category does not belong in home.'
-                });
-                return;
-            }
-        }).catch((error) => {
-            reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
-
-        connection.promise().query("UPDATE Home_Have_Item_Category SET active = 1 WHERE home_id = ? AND category_id = ?", [
-            request.body.home_id, request.body.category_id
+        await connection.promise().query("UPDATE Home_Have_Item_Category SET active = 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND category_id = ?", [
+            request.body.user_id, request.body.home_id, request.body.category_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
                 reply.send({
                     output: 'error',
-                    message: 'item category disabled failure'
+                    message: 'item category enable failure'
                 });
+
+                connection.end();
                 return;
             }
 
             reply.send({
                 output: 'success',
-                message: 'item category disabled success'
+                message: 'item category enable success'
             });
+
+            connection.end();
+            return;
         }).catch((error) => {
             reply.send({
                 output: "error",
                 message: error.message
             });
-        });
 
-        connection.end();
-        return;
+            connection.end();
+            return;
+        });
     });
 }
