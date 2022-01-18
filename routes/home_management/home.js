@@ -259,8 +259,6 @@ module.exports = async (fastify, opts) => {
                     new_home_id
                 ]).then(([rows, fields]) => {
                     if (rows.length === 0) resolve();
-
-                    continue;
                 }).catch((error) => {
                     reject(error);
                 });

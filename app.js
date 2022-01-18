@@ -20,7 +20,6 @@ fastify.register(require('./routes/home_management/user'));
 fastify.register(require('./routes/home_management/category'));
 fastify.register(require('./routes/home_management/item'));
 
-
 const start = async() => {
     await fastify.register(require('middie'))
     fastify.use(require('cors')())
