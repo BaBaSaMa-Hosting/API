@@ -15,10 +15,10 @@ fastify.get('/', async (request, reply) => {
 fastify.register(require('./routes/get_random_quote'));
 
 fastify.register(require('./routes/home_management/auth'));
-fastify.register(require('./routes/home_management/home'));
-fastify.register(require('./routes/home_management/user'));
 fastify.register(require('./routes/home_management/category'));
+fastify.register(require('./routes/home_management/user'));
 fastify.register(require('./routes/home_management/item'));
+fastify.register(require('./routes/home_management/home'));
 
 const start = async() => {
     await fastify.register(require('middie'))
