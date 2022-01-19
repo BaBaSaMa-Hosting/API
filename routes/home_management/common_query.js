@@ -24,6 +24,8 @@ const check_user_exist = async (reply, connection, user_id) => {
 }
 
 const check_home_exist = async (reply, connection, home_id) => {
+    let value = false;
+
     await connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
         home_id
     ]).then(([rows, fields]) => {
@@ -34,10 +36,9 @@ const check_home_exist = async (reply, connection, home_id) => {
             });
 
             connection.end();
-            return false;
         }
 
-        return true;
+        value = true;
     }).catch((error) => {
         reply.send({
             output: "error",
@@ -45,8 +46,9 @@ const check_home_exist = async (reply, connection, home_id) => {
         });
 
         connection.end();
-        return false;
     });
+
+    return value;
 }
 
 const check_user_in_home = async (reply, connection, home_id, user_id) => {
