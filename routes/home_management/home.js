@@ -804,7 +804,7 @@ module.exports = async (fastify, opts) => {
             return;
         });
 
-        new Promise ((resolve, reject) => {
+        new Promise (async (resolve, reject) => {
             const owner = await get_user_details(reply, connection, request.body.user_id);
             if (owner.length === 0) return;
     
