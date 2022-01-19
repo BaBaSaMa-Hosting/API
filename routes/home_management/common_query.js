@@ -1,4 +1,7 @@
 const check_user_exist = async (reply, connection, user_id) => {
+    let value = false;
+
+    console.log("getting value")
     await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
         user_id
     ]).then(([rows, fields]) => {
@@ -8,10 +11,11 @@ const check_user_exist = async (reply, connection, user_id) => {
                 message: 'user does not exist.'
             });
             connection.end();
-            return false;
+            return value;
         }
 
-        return true;
+        console.log("setting value to true")
+        value = true
     }).catch((error) => {
         reply.send({
             output: "error",
@@ -19,8 +23,11 @@ const check_user_exist = async (reply, connection, user_id) => {
         });
         
         connection.end();
-        return false;
+        return value;
     });
+    
+    console.log("setting value to false")
+    return value;
 }
 
 const check_home_exist = async (reply, connection, home_id) => {
