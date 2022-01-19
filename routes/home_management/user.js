@@ -130,6 +130,7 @@ module.exports = async (fastify, opts) => {
         connection.connect();
 
         console.log("checking user exist");
+        console.log(await check_user_exist(reply, connection, request.query.user_id))
         if (!await check_user_exist(reply, connection, request.query.user_id)) {
             console.log("returned false")
             return reply;
