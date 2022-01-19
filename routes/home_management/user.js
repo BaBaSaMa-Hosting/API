@@ -129,34 +129,27 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        console.log("checking user exist");
-        console.log(await check_user_exist(reply, connection, request.query.user_id))
         if (!await check_user_exist(reply, connection, request.query.user_id)) {
-            console.log("returned false")
             return reply;
         }
 
-        console.log("getting users");
         await connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             connection.end();
             if (rows.length === 0) {
-                console.log("error")
                 return reply.send({
                     output: "error",
                     message: "no user retrieved"
                 });
             }
 
-            console.log("replied")
             return reply.send({
                 output: 'success',
                 users: rows
             });
         }).catch((error) => {
             connection.end();
-            console.log("error");
             return reply.send({
                 output: "error",
                 message: error.message
