@@ -26,6 +26,7 @@ const check_user_exist = async (reply, connection, user_id) => {
 const check_home_exist = async (reply, connection, home_id) => {
     let value = false;
 
+    console.log("getting value")
     await connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
         home_id
     ]).then(([rows, fields]) => {
@@ -36,8 +37,10 @@ const check_home_exist = async (reply, connection, home_id) => {
             });
 
             connection.end();
+            return value;
         }
 
+        console.log("setting true")
         value = true;
     }).catch((error) => {
         reply.send({
@@ -46,8 +49,10 @@ const check_home_exist = async (reply, connection, home_id) => {
         });
 
         connection.end();
+        return value;
     });
 
+    console.log("return value")
     return value;
 }
 
