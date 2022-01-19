@@ -131,6 +131,7 @@ module.exports = async (fastify, opts) => {
 
         if (!await check_user_exist(reply, connection, request.query.user_id)) return;
 
+        console.log("getting users")
         await connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
             request.query.user_id
         ]).then(([rows, fields]) => {
