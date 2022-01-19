@@ -319,10 +319,29 @@ module.exports = async (fastify, opts) => {
 
         const default_categories = ["242c1439-fe45-42ff-af17-92d3c240ec96", "2d776bca-6c07-4b61-9d4c-e916b76ce42a", "68792937-db58-485a-bfc6-1856b243407e", "9aa2e39b-eb4d-4689-9aa3-46d20c49250e", "c60bc19e-be0a-40ef-950c-fe8136018bf7"];
         
-        if (!await adding_category_into_home(reply, connection, new_home_id, request.body.user_id, "242c1439-fe45-42ff-af17-92d3c240ec96"))
         new Promise((resolve, reject) => {
             default_categories.forEach((category_id, index) => {
-                if (!await adding_category_into_home(reply, connection, new_home_id, request.body.user_id, "242c1439-fe45-42ff-af17-92d3c240ec96")) reject();
+                connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on)VALUES (?, ?, DEFAULT, ?, DEFAULT, ?, DEFAULT)", [
+                    new_home_id, category_id, request.body.user_id, request.body.user_id
+                ]).then(([rows, fields]) => {
+                    if (rows.affectedRows === 0) {
+                        reply.send({
+                            output: 'error',
+                            message: 'adding category to home failed'
+                        });
+            
+                        connection.end();
+                        reject();
+                    }
+                }).catch((error) => {
+                    reply.send({
+                        output: "error",
+                        message: error.message
+                    });
+            
+                    connection.end();
+                    reject();
+                }); 
 
                 if (index === default_categories.length) resolve();
             });
