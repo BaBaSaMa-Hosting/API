@@ -321,9 +321,7 @@ module.exports = async (fastify, opts) => {
         
         new Promise((resolve, reject) => {
             default_categories.forEach((category_id, index) => {
-                if (!await adding_category_into_home(reply, connection, request.body.home_id, request.body.user_id, category_id)) {
-                    reject();
-                }
+                if (!await adding_category_into_home(reply, connection, request.body.home_id, request.body.user_id, category_id)) reject();
 
                 if (index === default_categories.length) resolve();
             });

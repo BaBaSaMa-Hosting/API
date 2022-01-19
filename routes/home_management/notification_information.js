@@ -1,4 +1,4 @@
-module.exports.get_user_details = async (reply, connection, user_id) => {
+const get_user_details = async (reply, connection, user_id) => {
     await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
         user_id
     ]).then(([rows, fields]) => {
@@ -23,7 +23,7 @@ module.exports.get_user_details = async (reply, connection, user_id) => {
     });
 }
 
-module.exports.get_home_details = async (reply, connection, home_id) => {
+const get_home_details = async (reply, connection, home_id) => {
     await connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
         home_id
     ]).then(([rows, fields]) => {
@@ -54,7 +54,7 @@ module.exports.get_home_details = async (reply, connection, home_id) => {
     });
 }
 
-module.exports.get_home_users_details = async (reply, connection, home_id, user_id) => {
+const get_home_users_details = async (reply, connection, home_id, user_id) => {
     await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
         user_id, home_id
     ]).then(([rows, fields]) => {
@@ -80,7 +80,7 @@ module.exports.get_home_users_details = async (reply, connection, home_id, user_
     });
 }
 
-module.exports.get_item_details = async (reply, connection, item_id, home_id) => {
+const get_item_details = async (reply, connection, item_id, home_id) => {
     await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
         home_id, item_id
     ]).then(([rows, fields]) => {
@@ -104,4 +104,11 @@ module.exports.get_item_details = async (reply, connection, item_id, home_id) =>
         connection.end();
         return [];
     });
+}
+
+module.exports = {
+    get_user_details,
+    get_home_details,
+    get_item_details, 
+    get_home_users_details
 }
