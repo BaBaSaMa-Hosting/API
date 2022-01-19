@@ -135,30 +135,23 @@ module.exports = async (fastify, opts) => {
             request.query.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                return reply.send({
                     output: "error",
                     message: "no user retrieved"
                 });
-
-                connection.end();
-                return;
             }
 
-            reply.send({
+            connection.end();
+            return reply.send({
                 output: 'success',
                 users: rows
             });
-
-            connection.end();
-            return;
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-
-            connection.end();
-            return;
         });
     });
 }
