@@ -12,7 +12,7 @@ const { get_user_details } = require('./notification_information');
 
 module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-    // get display name
+    // get user details name
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/user', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
@@ -35,10 +35,12 @@ module.exports = async (fastify, opts) => {
             const user = await get_user_details(reply, connection, request.query.user_id);
             if (user.length === 0) return;
 
+            user[0].user_notification_token = "You Fool! THUNDER CROSS SPLIT ATTACK!"
+
             connection.end();
             return reply.send({
                 output: "success",
-                display_name: user[0].display_name
+                display_name: user[0]
             })
         }
 
@@ -118,9 +120,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        if (!await check_user_exist(reply, connection, request.query.user_id)) {
-            return reply;
-        }
+        if (!await check_user_exist(reply, connection, request.query.user_id)) return reply;
 
         await connection.promise().query("SELECT * FROM Users WHERE user_id != ?", [
             request.query.user_id
@@ -132,6 +132,11 @@ module.exports = async (fastify, opts) => {
                     message: "no user retrieved"
                 });
             }
+
+            rows.forEach((i, index) => {
+                rows[index].auth_type = "as if im letting you know"
+                rows[index].user_notification_token = "You Fool! THUNDER CROSS SPLIT ATTACK!"
+            });
 
             return reply.send({
                 output: 'success',
