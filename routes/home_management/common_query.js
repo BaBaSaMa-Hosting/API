@@ -16,6 +16,7 @@ const check_user_exist = async (reply, connection, user_id) => {
     }).catch((error) => {
         reply.send({
             output: "error",
+            error: "user exist",
             message: error.message
         });
         
@@ -46,6 +47,7 @@ const check_home_exist = async (reply, connection, home_id) => {
     }).catch((error) => {
         reply.send({
             output: "error",
+            error: "home exist",
             message: error.message
         });
 
@@ -75,6 +77,7 @@ const check_user_in_home = async (reply, connection, home_id, user_id) => {
     }).catch((error) => {
         reply.send({
             output: "error",
+            error: "user in home",
             message: error.message
         });
 
@@ -104,6 +107,7 @@ const check_item_exist = async (reply, connection, home_id, item_id) => {
     }).catch((error) => {
         reply.send({
             output: "error",
+            error: "item exist",
             message: error.message
         });
 
@@ -133,6 +137,7 @@ const check_category_in_home = async (reply, connection, home_id, category_id) =
     }).catch((error) => {
         reply.send({
             output: "error",
+            error: "category in home",
             message: error.message
         });
 
@@ -162,6 +167,7 @@ const adding_category_into_home = async (reply, connection, home_id, user_id, ca
     }).catch((error) => {
         reply.send({
             output: "error",
+            error: "adding category",
             message: error.message
         });
 
