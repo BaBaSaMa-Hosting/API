@@ -502,6 +502,7 @@ module.exports = async (fastify, opts) => {
             
             return reply.send({
                 output: "error",
+                error: "error 1",
                 message: error.message
             }); 
         });
@@ -563,6 +564,7 @@ module.exports = async (fastify, opts) => {
             
             return reply.send({
                 output: "error",
+                error: "error 2",
                 message: error.message
             }); 
         });
