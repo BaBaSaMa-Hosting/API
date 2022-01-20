@@ -62,7 +62,7 @@ module.exports = async (fastify, opts) => {
                     let buffer  = new Buffer(i.item_image, 'base64');
                     rows[index].item_image = buffer.toString();
 
-                    if (index === rows.length) resolve();
+                    if (index === (rows.length - 1)) resolve();
                 });
             }).then(() => {
                 return reply.send({

@@ -34,12 +34,10 @@ module.exports = async (fastify, opts) => {
 
         if (!await check_user_exist(reply, connection, request.query.user_id)) return reply;
 
-        console.log("user in home query")
         await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.user_id = ? ", [
             request.query.user_id
         ]).then(([rows, fields]) => {
             connection.end();
-            console.log("result gotten")
             
             if (rows.length === 0) {
                 console.log("no rows found")
@@ -49,27 +47,20 @@ module.exports = async (fastify, opts) => {
                 });
             }
 
-            console.log("rows found")
             new Promise((resolve, reject) => {
-                
-                console.log("promise")
                 rows.forEach((i, index) => {
                     let buffer  = new Buffer(i.home_image, 'base64');
                     rows[index].home_image = buffer.toString();
 
-                    console.log("index: " + index)
-                    console.log("total: " + rows.length)
-                    if (index === rows.length) resolve();
+                    if (index === (rows.length - 1)) resolve();
                 })
             }).then(() => {
-                console.log("promise resolved")
                 return reply.send({
                     output: 'success',
                     home: rows
                 });
             });
         }).catch((error) => {
-            console.log("error found")
             connection.end();
             
             return reply.send({
@@ -321,7 +312,7 @@ module.exports = async (fastify, opts) => {
                     reject();
                 }); 
 
-                if (index === default_categories.length) resolve();
+                if (index === (default_categories.length - 1)) resolve();
             });
         }).catch(() => {
             connection.end();
@@ -838,7 +829,7 @@ module.exports = async (fastify, opts) => {
                     });
                 }
 
-                if (index == user_ids.length) resolve()
+                if (index == (user_ids.length - 1)) resolve()
             });
         }).then(() => {
             connection.end();
