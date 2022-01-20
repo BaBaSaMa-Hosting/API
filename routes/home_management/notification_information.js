@@ -43,7 +43,7 @@ const get_home_details = async (reply, connection, home_id) => {
             return value;
         }
 
-        rows.forEach(i => {
+        rows.forEach((i, index) => {
             let buffer  = new Buffer(i.home_image, 'base64');
             rows[index].home_image = buffer.toString();
         });
@@ -106,6 +106,11 @@ const get_item_details = async (reply, connection, item_id, home_id) => {
             connection.end();
             return value;
         }
+
+        rows.forEach((i, index) => {
+            let buffer  = new Buffer(i.item_image, 'base64');
+            rows[index].item_image = buffer.toString();
+        });
 
         value = rows;
     }).catch((error) => {
