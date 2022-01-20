@@ -17,19 +17,17 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/item/list', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.query.home_id === undefined || request.query.home_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'home id is not passed in.'
             });
-            return;
         }
 
         const connection = mysql.createConnection({
@@ -41,23 +39,22 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
         
-        if (!await check_user_exist(reply, connection, request.query.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.query.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.query.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.query.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.query.home_id, request.query.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.query.home_id, request.query.user_id)) return reply;
 
         await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND active = 1", [
             request.query.home_id
         ]).then(([rows, fields]) => {
+            connection.end();
+
             if (rows.length === 0) {
-                reply.send({
+                return reply.send({
                     output: 'error',
                     message: 'home does not have any item.'
                 });
-
-                connection.end();
-                return;
             }
 
             new Promise((resolve, reject) => {
@@ -68,22 +65,18 @@ module.exports = async (fastify, opts) => {
                     if (index === rows.length) resolve();
                 });
             }).then(() => {
-                reply.send({
+                return reply.send({
                     output: 'success',
                     items: rows
                 });
-
-                connection.end();
-                return;
             });
         }).catch((error) => {
-            reply.send({
+            connection.end();
+
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-
-            connection.end();
-            return;
         });
     });
 
@@ -92,67 +85,59 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/item/create', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
-            });
-            return;
+            }); 
         }
 
         if (request.body.home_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
-            });
-            return;
+            }); 
         }
 
         if (request.body.item_name === undefined || request.body.item_name === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item name is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_description === undefined || request.body.item_description === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item description is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_image === undefined || request.body.item_image === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item image is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_cost === undefined || request.body.item_cost === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item cost is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_stock === undefined || request.body.item_stock === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item stock is not passed in.'
             });
-            return;
         }
 
         if (request.body.category_id === undefined || request.body.category_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item category is not passed in.'
             });
-            return;
         }
         
         const connection = mysql.createConnection({
@@ -164,11 +149,11 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
         let new_item_id = uuidv4();
 
@@ -176,32 +161,30 @@ module.exports = async (fastify, opts) => {
             request.body.home_id, new_item_id, request.body.item_name, request.body.item_description, request.body.item_image, request.body.item_cost, request.body.item_stock, request.body.expiry_date, request.body.category_id, request.body.item_limit, request.body.user_id, request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+
+                return reply.send({
                     output: 'error',
                     message: 'item creation failure.'
                 });
-
-                connection.end();
-                return;
             }
         }).catch((error) => {
+            connection.end();
+
             reply.send({
                 output: "error",
                 message: error.message
             });
-
-            connection.end();
-            return;
         });
 
         const user = await get_user_details(reply, connection, request.body.user_id);
-        if (user.length === 0) return;
+        if (user.length === 0) return reply;
 
         const home = await get_home_details(reply, connection, request.body.home_id);
-        if (home.length === 0) return;
+        if (home.length === 0) return reply;
 
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
-        if (users.length === 0) return;
+        if (users.length === 0) return reply;
 
         const message = {
             notification: { 
@@ -227,13 +210,12 @@ module.exports = async (fastify, opts) => {
             });
         }
 
-        reply.send({
+        connection.end();
+
+        return reply.send({
             output: 'success',
             message: 'successfully added created new item'
         });
-
-        connection.end();
-        return;
     });
     
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -241,91 +223,80 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/item/update', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.home_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_id === undefined || request.body.item_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_name === undefined || request.body.item_name === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item name is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_description === undefined || request.body.item_description === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item description is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_image === undefined || request.body.item_image === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item image is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_cost === undefined || request.body.item_cost === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item cost is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_stock === undefined || request.body.item_stock === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item stock is not passed in.'
             });
-            return;
         }
 
         if (request.body.expiry_date === undefined || request.body.expiry_date === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item expiry date is not passed in.'
             });
-            return;
         }
 
         if (request.body.category_id === undefined || request.body.category_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item category is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_limit === undefined || request.body.item_limit === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'item limit is not passed in.'
             });
-            return;
         }
         
         const connection = mysql.createConnection({
@@ -337,45 +308,42 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-       
-        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return reply;
 
         await connection.promise().query("UPDATE Items SET item_name = ?, item_description = ?, item_image = ?, item_cost = ?, item_stock = ?, item_expiry_date = ?, item_category = ?, item_limit = ?, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.item_name, request.body.item_description, request.body.item_image, request.body.item_cost, request.body.item_stock, request.body.expiry_date, request.body.category_id, request.body.item_limit, request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+
+                return reply.send({
                     output: 'error',
                     message: 'item failed to update'
                 });
-                
-                connection.end();
-                return;
             }
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-                
-            connection.end();
-            return;
         });
 
         const user = await get_user_details(reply, connection, request.body.user_id);
-        if (user.length === 0) return;
+        if (user.length === 0) return reply;
 
         const home = await get_home_details(reply, connection, request.body.home_id);
-        if (home.length === 0) return;
+        if (home.length === 0) return reply;
 
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
-        if (users.length === 0) return;
+        if (users.length === 0) return reply;
 
         const message = {
             notification: { 
@@ -400,14 +368,12 @@ module.exports = async (fastify, opts) => {
                 console.error(error);
             });
         }
+        connection.end();
 
-        reply.send({
+        return reply.send({
             output: 'success',
             message: 'successfully updated item'
         });
-
-        connection.end();
-        return;
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -415,27 +381,24 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/item/increase', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.home_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_id === undefined || request.body.item_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
         
         const connection = mysql.createConnection({
@@ -447,42 +410,37 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return reply;
 
         await connection.promise().query("UPDATE Items SET item_stock = item_stock + 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
+            connection.end();
+            
             if (rows.length === 0) {
-                reply.send({
+                return reply.send({
                     output: 'error',
                     message: 'item failed to update'
-                });
-
-                connection.end();
-                return;
+                }); 
             }
 
-            reply.send({
+            return reply.send({
                 output: 'success',
                 message: 'successfully updated item'
             });
-
-            connection.end();
-            return;
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
-            });
-
-            connection.end();
-            return;
+            }); 
         });
     });
 
@@ -491,27 +449,24 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/item/decrease', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.home_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_id === undefined || request.body.item_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
         
         const connection = mysql.createConnection({
@@ -523,56 +478,53 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return reply;
 
         await connection.promise().query("UPDATE Items SET item_stock = item_stock - 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ? AND item_stock != 0", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+                
+                return reply.send({
                     output: 'error',
                     message: 'item failed to update'
-                });
-        
-                connection.end();
-                return;
+                }); 
             }
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
-            });
-        
-            connection.end();
-            return;
+            }); 
         });
 
         const user = await get_user_details(reply, connection, request.body.user_id);
-        if (user.length === 0) return;
+        if (user.length === 0) return reply;
 
         const home = await get_home_details(reply, connection, request.body.home_id);
-        if (home.length === 0) return;
+        if (home.length === 0) return reply;
 
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
-        if (users.length === 0) return;
+        if (users.length === 0) return reply;
 
         await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
             request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+                
+                return reply.send({
                     output: 'error',
                     message: 'item does not exist.'
-                });
-        
-                connection.end();
-                return;
+                }); 
             }
 
             if (rows[0].item_limit > rows[0].item_stock) {
@@ -600,22 +552,19 @@ module.exports = async (fastify, opts) => {
                     });
                 }
             }
-
-            reply.send({
+            connection.end();
+                
+            return reply.send({
                 output: 'success',
                 message: 'item successfully updated'
-            });
-        
-            connection.end();
-            return;
+            }); 
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
-            });
-        
-            connection.end();
-            return;
+            }); 
         });
     });
 
@@ -624,27 +573,24 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/item/disable', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.home_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_id === undefined || request.body.item_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
         
         const connection = mysql.createConnection({
@@ -656,44 +602,42 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return reply;
 
         await connection.promise().query("UPDATE Items SET active = 0, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+                
+                return reply.send({
                     output: 'error',
                     message: 'item failed to update'
-                });
-
-                connection.end();
-                return;
+                }); 
             }
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
-            });
-
-            connection.end();
-            return;
+            }); 
         });
 
         const user = await get_user_details(reply, connection, request.body.user_id);
-        if (user.length === 0) return;
+        if (user.length === 0) return reply;
 
         const home = await get_home_details(reply, connection, request.body.home_id);
-        if (home.length === 0) return;
+        if (home.length === 0) return reply;
 
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
-        if (users.length === 0) return;
+        if (users.length === 0) return reply;
 
         const message = {
             notification: { 
@@ -718,14 +662,12 @@ module.exports = async (fastify, opts) => {
                 console.error(error);
             });
         }
+        connection.end();
 
-        reply.send({
+        return reply.send({
             output: 'success',
             message: 'successfully updated item'
         });
-        
-        connection.end();
-        return;
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -733,27 +675,24 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/item/enable', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.home_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.item_id === undefined || request.body.item_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
         
         const connection = mysql.createConnection({
@@ -765,44 +704,42 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        if (!await check_user_exist(reply, connection, request.body.user_id)) return;
+        if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        if (!await check_home_exist(reply, connection, request.body.home_id)) return;
+        if (!await check_home_exist(reply, connection, request.body.home_id)) return reply;
 
-        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return;
+        if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return;
+        if (!await check_item_exist(reply, connection, request.body.home_id, request.body.item_id)) return reply;
 
         await connection.promise().query("UPDATE Items SET active = 1, updated_by = ?, updated_on = CURRENT_TIMESTAMP WHERE home_id = ? AND item_id = ?", [
             request.body.user_id, request.body.home_id, request.body.item_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+                
+                return reply.send({
                     output: 'error',
                     message: 'item failed to update'
                 });
-        
-                connection.end();
-                return;
             }
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-        
-            connection.end();
-            return;
         });
 
         const user = await get_user_details(reply, connection, request.body.user_id);
-        if (user.length === 0) return;
+        if (user.length === 0) return reply;
 
         const home = await get_home_details(reply, connection, request.body.home_id);
-        if (home.length === 0) return;
+        if (home.length === 0) return reply;
 
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
-        if (users.length === 0) return;
+        if (users.length === 0) return reply;
 
         const message = {
             notification: { 
@@ -827,13 +764,11 @@ module.exports = async (fastify, opts) => {
                 console.error(error);
             });
         }
+        connection.end();
 
-        reply.send({
+        return reply.send({
             output: 'success',
             message: 'successfully updated item'
-        });
-
-        connection.end();
-        return;
+        }); 
     });
 }

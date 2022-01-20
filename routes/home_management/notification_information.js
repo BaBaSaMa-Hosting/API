@@ -1,4 +1,6 @@
 const get_user_details = async (reply, connection, user_id) => {
+    let value = [];
+
     await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
         user_id
     ]).then(([rows, fields]) => {
@@ -8,10 +10,10 @@ const get_user_details = async (reply, connection, user_id) => {
                 message: 'user does not exist.'
             });
             connection.end();
-            return [];
+            return value;
         }
 
-        return rows;
+        value = rows;
     }).catch((error) => {
         reply.send({
             output: "error",
@@ -19,11 +21,15 @@ const get_user_details = async (reply, connection, user_id) => {
         });
         
         connection.end();
-        return [];
+        return value;
     });
+
+    return value;
 }
 
 const get_home_details = async (reply, connection, home_id) => {
+    let value = [];
+
     await connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
         home_id
     ]).then(([rows, fields]) => {
@@ -34,7 +40,7 @@ const get_home_details = async (reply, connection, home_id) => {
             });
 
             connection.end();
-            return [];
+            return value;
         }
 
         rows.forEach(i => {
@@ -42,7 +48,7 @@ const get_home_details = async (reply, connection, home_id) => {
             rows[index].home_image = buffer.toString();
         });
 
-        return rows;
+        value = rows;
     }).catch((error) => {
         reply.send({
             output: "error",
@@ -50,11 +56,15 @@ const get_home_details = async (reply, connection, home_id) => {
         });
 
         connection.end();
-        return [];
+        return value;
     });
+
+    return value;
 }
 
 const get_home_users_details = async (reply, connection, home_id, user_id) => {
+    let value = [];
+
     await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
         user_id, home_id
     ]).then(([rows, fields]) => {
@@ -65,10 +75,10 @@ const get_home_users_details = async (reply, connection, home_id, user_id) => {
             });
 
             connection.end();
-            return [];
+            return value;
         }
 
-        return rows;
+        value = rows;
     }).catch((error) => {
         reply.send({
             output: "error",
@@ -76,11 +86,14 @@ const get_home_users_details = async (reply, connection, home_id, user_id) => {
         });
 
         connection.end();
-        return [];
+        return value;
     });
+
+    return value;
 }
 
 const get_item_details = async (reply, connection, item_id, home_id) => {
+    let value = []
     await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND item_id = ?", [
         home_id, item_id
     ]).then(([rows, fields]) => {
@@ -91,10 +104,10 @@ const get_item_details = async (reply, connection, item_id, home_id) => {
             });
             
             connection.end();
-            return [];
+            return value;
         }
 
-        return rows;
+        value = rows;
     }).catch((error) => {
         reply.send({
             output: "error",
@@ -102,8 +115,9 @@ const get_item_details = async (reply, connection, item_id, home_id) => {
         });
 
         connection.end();
-        return [];
+        return value;
     });
+    return value;
 }
 
 module.exports = {

@@ -13,15 +13,14 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/auth/login', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
-            });
-            return;
+            }); 
         }
 
         if (request.query.notification_token === undefined || request.query.notification_token === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'notification token is not passed in'
             })
@@ -40,12 +39,13 @@ module.exports = async (fastify, opts) => {
             request.query.user_id
         ]).then( async ([rows, fields]) => {
             if (rows.length === 0) {
-                reply.send({
+                connection.end();
+                
+                return reply.send({
                     output: "retry",
                     message: "Please register an account first",
                     where_to: "register"
-                });
-                return;
+                }); 
             }
 
             if (rows[0].user_notification_token != request.query.notification_token) {
@@ -53,36 +53,36 @@ module.exports = async (fastify, opts) => {
                     request.query.notification_token, request.query.user_id
                 ]).then( async ([rows, fields]) => {
                     if (rows.affectedRows === 0) {
-                        reply.send({
+                        connection.end();
+                        
+                        return reply.send({
                             output: "error",
                             message: "fail to update user notification token"
-                        });
-                        return;
+                        }); 
                     }
                 }).catch((error) => {
-                    reply.send({
+                    connection.end();
+                    
+                    return reply.send({
                         output: "error",
                         message: error.message
-                    });
-                    connection.end();
-                    return;
+                    }); 
                 });
             }
+            connection.end();
             
-            reply.send({
+            return reply.send({
                 output: 'success',
                 message: 'user successfully logged in'
             });
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-            connection.end();
-            return;
         })
-        connection.end();
-        return;
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -90,35 +90,31 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/auth/register', async function (request, reply) {
         if (request.body.display_name === undefined || request.body.display_name === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'display name is not passed in.'
-            });
-            return;
+            }); 
         }
 
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
-            });
-            return;
+            }); 
         }
 
         if (request.body.auth_type === undefined || request.body.auth_type === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'auth type is not passed in.'
-            });
-            return;
+            }); 
         }
 
         if (request.body.notification_token === undefined || request.body.notification_token === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'notification is not passed in.'
-            });
-            return;
+            }); 
         }
 
         const connection = mysql.createConnection({
@@ -134,47 +130,46 @@ module.exports = async (fastify, opts) => {
             request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 1) {
-                reply.send({
+                connection.end();
+                
+                return reply.send({
                     output: "retry",
                     message: "Account already exist",
                     where_to: "login"
-                });
-                return;
+                }); 
             }
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
-            });
-            connection.end();
-            return;
+            }); 
         });
 
         connection.promise().query("INSERT INTO Users (user_id, display_name, auth_type, user_notification_token) VALUES (?, ?, ?, ?)", [
             request.body.user_id, request.body.display_name, request.body.auth_type, request.body.notification_token
         ]).then(([rows, fields]) => {
+            connection.end();
+            
             if (rows.affectedRows === 0) {
-                reply.send({
+                return reply.send({
                     output: 'error',
                     message: 'user register error'
-                });
-                return;
+                }); 
             }
 
-            reply.send({
+            return reply.send({
                 output: 'success',
                 message: 'user successfully register'
             });
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-            connection.end();
-            return;
         })
-
-        connection.end();
-        return;
     });
 }

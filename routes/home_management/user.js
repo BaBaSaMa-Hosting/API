@@ -16,11 +16,10 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/user', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         const connection = mysql.createConnection({
@@ -36,14 +35,14 @@ module.exports = async (fastify, opts) => {
             const user = await get_user_details(reply, connection, request.query.user_id);
             if (user.length === 0) return;
 
-            reply.send({
+            connection.end();
+            return reply.send({
                 output: "success",
                 display_name: user[0].display_name
             })
         }
 
-        connection.end();
-        return;
+        return reply;
     });
 
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -51,19 +50,17 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.post('/home_management/user/update_name', async function (request, reply) {
         if (request.body.user_id === undefined || request.body.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         if (request.body.new_display_name === undefined || request.body.new_display_name === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'display name is not passed in.'
             });
-            return;
         }
 
         const connection = mysql.createConnection({
@@ -80,31 +77,24 @@ module.exports = async (fastify, opts) => {
         await connection.promise().query("UPDATE Users SET display_name = ? WHERE user_id = ?", [
             request.body.new_display_name, request.body.user_id
         ]).then(([rows, fields]) => {
+            connection.end();
             if (rows.affectedRows === 0) {
-                reply.send({
+                return reply.send({
                     output: 'error',
                     message: 'user register failure'
                 });
-                
-                connection.end();
-                return;
             }
 
-            reply.send({
+            return reply.send({
                 output: 'success',
                 message: 'user display name successfully updated'
             });
-
-            connection.end();
-            return;
         }).catch((error) => {
-            reply.send({
+            connection.end();
+            return reply.send({
                 output: "error",
                 message: error.message
             });
-
-            connection.end();
-            return;
         });
     });
 
@@ -113,11 +103,10 @@ module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/users', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
-            reply.send({
+            return reply.send({
                 output: 'error',
                 message: 'user id is not passed in.'
             });
-            return;
         }
 
         const connection = mysql.createConnection({
