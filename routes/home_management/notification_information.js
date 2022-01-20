@@ -66,7 +66,7 @@ const get_home_users_details = async (reply, connection, home_id, user_id) => {
     let value = [];
 
     await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id WHERE UIH.home_id = ?", [
-        user_id, home_id
+        home_id
     ]).then(([rows, fields]) => {
         if (rows.length === 0) {
             reply.send({
