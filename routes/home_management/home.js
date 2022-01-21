@@ -498,6 +498,26 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        await connection.promise().query("SELECT * FROM User_In_Home WHERE home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 6) {
+                connection.end();
+            
+                return reply.send({
+                    output: "error",
+                    message: "you have reached the maximum amount of users that can be added to this home."
+                });
+            }
+        }).catch((error) => {
+            connection.end();
+
+            return reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
         await connection.promise().query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, '', DEFAULT, DEFAULT)", [
             request.body.home_id, request.body.new_user_id
         ]).then(([rows, fields]) => {

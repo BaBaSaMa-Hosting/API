@@ -155,9 +155,29 @@ module.exports = async (fastify, opts) => {
 
         if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
+        await connection.promise().query("SELECT * FROM Items WHERE home_id = ?", [
+            request.body.home_id
+        ]).then(([rows, fields]) => {
+            if (rows.length === 50) {
+                connection.end();
+                
+                return reply.send({
+                    output: "error",
+                    message: "You have reached the maximum of items you can add to home."
+                })
+            }
+        }).catch((error) => {
+            connection.end();
+
+            return reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+
         let new_item_id = uuidv4();
 
-        connection.promise().query("INSERT INTO Items (home_id, item_id, item_name, item_description, item_image, item_cost, item_stock, item_expiry_date, item_category, item_limit, created_by, created_on, updated_by, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DEFAULT, ?, DEFAULT);", [
+        await connection.promise().query("INSERT INTO Items (home_id, item_id, item_name, item_description, item_image, item_cost, item_stock, item_expiry_date, item_category, item_limit, created_by, created_on, updated_by, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DEFAULT, ?, DEFAULT);", [
             request.body.home_id, new_item_id, request.body.item_name, request.body.item_description, request.body.item_image, request.body.item_cost, request.body.item_stock, request.body.expiry_date, request.body.category_id, request.body.item_limit, request.body.user_id, request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 0) {
@@ -171,7 +191,7 @@ module.exports = async (fastify, opts) => {
         }).catch((error) => {
             connection.end();
 
-            reply.send({
+            return reply.send({
                 output: "error",
                 message: error.message
             });
