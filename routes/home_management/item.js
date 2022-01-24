@@ -13,7 +13,7 @@ const { admin } = require('./firebase_config');
 
 module.exports = async (fastify, opts) => {
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-    // get list of item
+    // get list of enabled item
     // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
     fastify.get('/home_management/item/list', async function (request, reply) {
         if (request.query.user_id === undefined || request.query.user_id === null) {
@@ -54,6 +54,74 @@ module.exports = async (fastify, opts) => {
                 return reply.send({
                     output: 'error',
                     message: 'home does not have any item.'
+                });
+            }
+
+            new Promise((resolve, reject) => {
+                rows.forEach((i, index) => {
+                    let buffer  = new Buffer(i.item_image, 'base64');
+                    rows[index].item_image = buffer.toString();
+
+                    if (index === (rows.length - 1)) resolve();
+                });
+            }).then(() => {
+                return reply.send({
+                    output: 'success',
+                    items: rows
+                });
+            });
+        }).catch((error) => {
+            connection.end();
+
+            return reply.send({
+                output: "error",
+                message: error.message
+            });
+        });
+    });
+
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    // get list of disabled items
+    // *~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+    fastify.get('/home_management/item/list_disabled', async function (request, reply) {
+        if (request.query.user_id === undefined || request.query.user_id === null) {
+            return reply.send({
+                output: 'error',
+                message: 'user id is not passed in.'
+            });
+        }
+
+        if (request.query.home_id === undefined || request.query.home_id === null) {
+            return reply.send({
+                output: 'error',
+                message: 'home id is not passed in.'
+            });
+        }
+
+        const connection = mysql.createConnection({
+            host: process.env.host,
+            user: process.env.username,
+            password: process.env.password,
+            database: process.env.database
+        });
+
+        connection.connect();
+        
+        if (!await check_user_exist(reply, connection, request.query.user_id)) return reply;
+
+        if (!await check_home_exist(reply, connection, request.query.home_id)) return reply;
+
+        if (!await check_user_in_home(reply, connection, request.query.home_id, request.query.user_id)) return reply;
+
+        await connection.promise().query("SELECT * FROM Items WHERE home_id = ? AND active = 0", [
+            request.query.home_id
+        ]).then(([rows, fields]) => {
+            connection.end();
+
+            if (rows.length === 0) {
+                return reply.send({
+                    output: 'error',
+                    message: 'home does not have any disabled item.'
                 });
             }
 
