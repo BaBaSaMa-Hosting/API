@@ -51,8 +51,8 @@ module.exports = async (fastify, opts) => {
             if (rows[0].user_notification_token != request.query.notification_token) {
                 await connection.promise().query("UPDATE Users SET user_notification_token = ? WHERE user_id = ?", [
                     request.query.notification_token, request.query.user_id
-                ]).then( async ([rows, fields]) => {
-                    if (rows.affectedRows === 0) {
+                ]).then( async ([rows2, fields]) => {
+                    if (rows2.affectedRows === 0) {
                         connection.end();
                         
                         return reply.send({
@@ -73,7 +73,8 @@ module.exports = async (fastify, opts) => {
             
             return reply.send({
                 output: 'success',
-                message: 'user successfully logged in'
+                message: 'user successfully logged in',
+                display_name: `${rows[0].display_name}`
             });
         }).catch((error) => {
             connection.end();
