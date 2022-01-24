@@ -269,10 +269,12 @@ module.exports = async (fastify, opts) => {
             });
         });
 
+        console.log("making category");
         const default_categories = ["242c1439-fe45-42ff-af17-92d3c240ec96", "2d776bca-6c07-4b61-9d4c-e916b76ce42a", "68792937-db58-485a-bfc6-1856b243407e", "9aa2e39b-eb4d-4689-9aa3-46d20c49250e", "c60bc19e-be0a-40ef-950c-fe8136018bf7"];
         
-        new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             default_categories.forEach((category_id, index) => {
+                console.log(`index: ${index}`)
                 connection.promise().query("INSERT INTO Home_Have_Item_Category (home_id, category_id, active, created_by, created_on, updated_by, updated_on)VALUES (?, ?, DEFAULT, ?, DEFAULT, ?, DEFAULT)", [
                     new_home_id, category_id, request.body.user_id, request.body.user_id
                 ]).then(([rows, fields]) => {
@@ -294,11 +296,13 @@ module.exports = async (fastify, opts) => {
                 if (index === (default_categories.length - 1)) resolve();
             });
         }).catch(() => {
+            console.log(`rejected`)
             connection.end();
             
             return reply;
         });
-            
+        
+        console.log("finish making category");
         connection.end();
                 
         return reply.send({
