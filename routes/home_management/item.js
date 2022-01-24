@@ -8,7 +8,7 @@ const {
 } = require('uuid');
 
 const { check_user_exist, check_home_exist, check_user_in_home, check_item_exist } = require('./common_query');
-const { get_user_details, get_home_details, get_home_users_details } = require('./notification_information');
+const { get_user_details, get_home_details, get_home_users_details, get_item_details } = require('./notification_information');
 const { admin } = require('./firebase_config');
 
 module.exports = async (fastify, opts) => {
@@ -432,11 +432,14 @@ module.exports = async (fastify, opts) => {
 
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
         if (users.length === 0) return reply;
+        
+        const items = await get_item_details(reply, connection, request.body.item_id, request.body.home_id);
+        if (items.length === 0) return reply;
 
         const message = {
             notification: { 
-                title: `${item[0].item_name} Has Been Updated!`, 
-                body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Been Updated By ${user[0].display_name}.`
+                title: `${items[0].item_name} Has Been Updated!`, 
+                body: `Home ${home[0].home_name} Item ${items[0].item_name} Have Been Updated By ${user[0].display_name}.`
             }
         }
 
@@ -619,8 +622,8 @@ module.exports = async (fastify, opts) => {
             if (rows[0].item_limit > rows[0].item_stock) {
                 const message = {
                     notification: { 
-                        title: `${item[0].item_name} Gone Below a Set Limit`, 
-                        body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Only ${item[0].item_stock} Left.`
+                        title: `${rows[0].item_name} Gone Below a Set Limit`, 
+                        body: `Home ${home[0].home_name} Item ${rows[0].item_name} Have Only ${rows[0].item_stock} Left.`
                     }
                 }
         
@@ -672,14 +675,14 @@ module.exports = async (fastify, opts) => {
         if (request.body.home_id === undefined || request.body.user_id === null) {
             return reply.send({
                 output: 'error',
-                message: 'user id is not passed in.'
+                message: 'home id is not passed in.'
             });
         }
 
         if (request.body.item_id === undefined || request.body.item_id === null) {
             return reply.send({
                 output: 'error',
-                message: 'user id is not passed in.'
+                message: 'item id is not passed in.'
             });
         }
         
@@ -729,10 +732,13 @@ module.exports = async (fastify, opts) => {
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
         if (users.length === 0) return reply;
 
+        const items = await get_item_details(reply, connection, request.body.item_id, request.body.home_id);
+        if (items.length === 0) return reply;
+
         const message = {
             notification: { 
-                title: `${item[0].item_name} Has Been Disabled`, 
-                body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Been Disabled By ${user[0].display_name}.`
+                title: `${items[0].item_name} Has Been Disabled`, 
+                body: `Home ${home[0].home_name} Item ${items[0].item_name} Have Been Disabled By ${user[0].display_name}.`
             }
         }
 
@@ -831,10 +837,13 @@ module.exports = async (fastify, opts) => {
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
         if (users.length === 0) return reply;
 
+        const items = await get_item_details(reply, connection, request.body.item_id, request.body.home_id);
+        if (items.length === 0) return reply;
+
         const message = {
             notification: { 
-                title: `${item[0].item_name} Has Been Enabled`, 
-                body: `Home ${home[0].home_name} Item ${item[0].item_name} Have Been Enabled By ${user[0].display_name}.`
+                title: `${items[0].item_name} Has Been Enabled`, 
+                body: `Home ${home[0].home_name} Item ${items[0].item_name} Have Been Enabled By ${user[0].display_name}.`
             }
         }
 
