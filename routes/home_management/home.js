@@ -227,28 +227,7 @@ module.exports = async (fastify, opts) => {
 
         if (!await check_user_exist(reply, connection, request.body.user_id)) return reply;
 
-        let new_home_id = "";
-
-        await new Promise ((resolve, reject) => {
-            while (true) {
-                new_home_id = uuidv4().substring(0, 12);
-
-                connection.promise().query("SELECT * FROM Homes WHERE home_id = ?", [
-                    new_home_id
-                ]).then(([rows, fields]) => {
-                    if (rows.length === 0) resolve();
-                }).catch((error) => {
-                    reject(error);
-                });
-            }
-        }).catch((error) => {
-            connection.end();
-            
-            return reply.send({
-                output: "error",
-                message: error.message
-            });
-        });
+        let new_home_id = uuidv4().substring(0, 12);
 
         await connection.promise().query("INSERT INTO Homes (home_id, home_name, home_image, created_on, updated_on, created_by, updated_by) VALUES (?, ?, ?, DEFAULT, DEFAULT, ?, ?)", [
             new_home_id, request.body.home_name, request.body.home_image, request.body.user_id, request.body.user_id
