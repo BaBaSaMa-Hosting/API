@@ -765,7 +765,7 @@ module.exports = async (fastify, opts) => {
 
             target_user_list.forEach(async (i, index) => {
                 let insert = false;
-                let user;
+                let user = [];
                 await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.home_id = ? AND UIH.user_id = ?", [
                     request.body.home_id, i
                 ]).then(([rows, fields]) => {
