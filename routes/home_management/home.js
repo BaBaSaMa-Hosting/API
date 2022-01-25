@@ -787,6 +787,8 @@ module.exports = async (fastify, opts) => {
                                 });
                                 reject("");
                             }
+                            console.log(owner)
+                            console.log(user)
             
                             message = {
                                 notification: { 
