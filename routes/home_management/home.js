@@ -894,6 +894,7 @@ module.exports = async (fastify, opts) => {
         const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
         if (users.length === 0) return reply;
 
+        console.log(users);
         if (users.length === 1) {
             await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
                 request.body.target_user_id, request.body.home_id
