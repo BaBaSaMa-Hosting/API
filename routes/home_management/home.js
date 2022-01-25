@@ -885,34 +885,61 @@ module.exports = async (fastify, opts) => {
 
         if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ? AND user_relationship != 'Home Owner'", [
-            request.body.target_user_id, request.body.home_id
-        ]).then(([rows, fields]) => {
-            if (rows.affectedRows === 0) {
+        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
+        if (users.length === 0) return reply;
+
+        if (users.length === 1) {
+            await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ? AND user_relationship != 'Home Owner'", [
+                request.body.target_user_id, request.body.home_id
+            ]).then(([rows, fields]) => {
+                if (rows.affectedRows === 0) {
+                    connection.end();
+                    
+                    return reply.send({
+                        output: 'error',
+                        message: 'fail to remove user from home'
+                    }); 
+                }
+            }).catch((error) => {
                 connection.end();
                 
                 return reply.send({
-                    output: 'error',
-                    message: 'fail to remove user from home'
+                    output: "error",
+                    message: error.message
                 }); 
-            }
-        }).catch((error) => {
-            connection.end();
-            
+            });
+
             return reply.send({
-                output: "error",
-                message: error.message
+                output: 'success',
+                message: 'user successfully removed from home'
             }); 
-        });
+        } else {
+            await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ? AND user_relationship != 'Home Owner'", [
+                request.body.target_user_id, request.body.home_id
+            ]).then(([rows, fields]) => {
+                if (rows.affectedRows === 0) {
+                    connection.end();
+                    
+                    return reply.send({
+                        output: 'error',
+                        message: 'fail to remove user from home'
+                    }); 
+                }
+            }).catch((error) => {
+                connection.end();
+                
+                return reply.send({
+                    output: "error",
+                    message: error.message
+                }); 
+            });
+        }
 
         const user = await get_user_details(reply, connection, request.body.user_id);
         if (user.length === 0) return reply;
 
         const home = await get_home_details(reply, connection, request.body.home_id);
         if (home.length === 0) return reply;
-
-        const users = await get_home_users_details(reply, connection, request.body.home_id, request.body.user_id);
-        if (users.length === 0) return reply;
 
         const message_to_user = {
             notification: { 
