@@ -835,15 +835,18 @@ module.exports = async (fastify, opts) => {
                     });
                 }
 
-                if (index == (user_ids.length - 1)) resolve()
+                if (index == (user_ids.length - 1)) {
+                    connection.end();
+            
+                    reply.send({
+                        output: 'success',
+                        message: 'successfully edited the users in home.'
+                    }); 
+                    resolve()
+                }
             });
         }).then(() => {
-            connection.end();
-            
-            return reply.send({
-                output: 'success',
-                message: 'successfully edited the users in home.'
-            }); 
+            return reply;
         }).catch((error) => {
             connection.end();
             
