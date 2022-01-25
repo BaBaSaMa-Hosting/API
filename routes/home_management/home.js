@@ -753,10 +753,10 @@ module.exports = async (fastify, opts) => {
 
         new Promise (async (resolve, reject) => {
             const owner = await get_user_details(reply, connection, request.body.user_id);
-            if (owner.length === 0) return reply;
+            if (owner.length === 0) reject();
     
             const home = await get_home_details(reply, connection, request.body.home_id);
-            if (home.length === 0) return reply;
+            if (home.length === 0) reject();
 
             const options = {
                 priority: "high",
@@ -765,11 +765,12 @@ module.exports = async (fastify, opts) => {
 
             target_user_list.forEach(async (i, index) => {
                 let insert = false;
-                let user;
+                const user = await get_user_details(reply, connection, i);
+                if (user.length === 0) reject();
+
                 await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.home_id = ? AND UIH.user_id = ?", [
                     request.body.home_id, i
                 ]).then(([rows, fields]) => {
-                    user = rows;
                     if (rows.length === 0) {
                         insert = true
                     } 
@@ -796,7 +797,7 @@ module.exports = async (fastify, opts) => {
                         message = {
                             notification: { 
                                 title: `${owner[0].display_name} Has Invited You Into Their Home`, 
-                                body: `${user[0].display_name}, Welcome to ${user[0].home_name}`
+                                body: `${user[0].display_name}, Welcome to ${home[0].home_name}`
                             }
                         }
                     }).catch((error) => {
@@ -816,7 +817,7 @@ module.exports = async (fastify, opts) => {
     
                         message = {
                             notification: { 
-                                title: `You Has Remove From Home ${user[0].home_name}`, 
+                                title: `You Has Remove From Home ${home[0].home_name}`, 
                                 body: `Good Bye`
                             }
                         }
