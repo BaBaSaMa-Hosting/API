@@ -773,7 +773,7 @@ module.exports = async (fastify, opts) => {
                     if (rows.length === 0) {
                         insert = true
                     } 
-                }).then(() => {
+                }).then(async () => {
                     let message;
 
                     if (insert) {
@@ -830,8 +830,7 @@ module.exports = async (fastify, opts) => {
                     }
     
                     if (index == (user_ids.length - 1)) resolve()
-                })
-                .catch((error) => {
+                }).catch((error) => {
                     reject(error);
                 });
             });
