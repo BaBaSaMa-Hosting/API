@@ -884,7 +884,7 @@ module.exports = async (fastify, opts) => {
 
         if (!await check_user_in_home(reply, connection, request.body.home_id, request.body.user_id)) return reply;
 
-        await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
+        await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ? AND user_relationship != 'Home Owner'", [
             request.body.target_user_id, request.body.home_id
         ]).then(([rows, fields]) => {
             if (rows.affectedRows === 0) {
