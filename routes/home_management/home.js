@@ -811,7 +811,7 @@ module.exports = async (fastify, opts) => {
         
                             message = {
                                 notification: { 
-                                    title: `You Has Remove From Home ${rows[0].home_name}`, 
+                                    title: `You Has Remove From Home ${user[0].home_name}`, 
                                     body: `Good Bye`
                                 }
                             }
