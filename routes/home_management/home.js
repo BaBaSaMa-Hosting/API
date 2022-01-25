@@ -765,7 +765,7 @@ module.exports = async (fastify, opts) => {
 
             target_user_list.forEach(async (i, index) => {
                 let insert = false;
-                let user = [];
+                let user;
                 await connection.promise().query("SELECT * FROM User_In_Home UIH INNER JOIN Users U ON UIH.user_id = U.user_id INNER JOIN Homes H ON UIH.home_id = H.home_id WHERE UIH.home_id = ? AND UIH.user_id = ?", [
                     request.body.home_id, i
                 ]).then(([rows, fields]) => {
@@ -773,68 +773,68 @@ module.exports = async (fastify, opts) => {
                     if (rows.length === 0) {
                         insert = true
                     } 
-                }).then(async () => {
-                    let message;
-
-                    if (insert) {
-                        await connection.promise().query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, '', DEFAULT, DEFAULT)", [
-                            request.body.home_id, i
-                        ]).then(([rows, fields]) => {
-                            if (rows.affectedRows === 0) {
-                                reply.send({
-                                    output: 'error',
-                                    message: 'fail to add user to home'
-                                });
-                                reject("");
-                            }
-                            console.log(owner)
-                            console.log(user)
-            
-                            message = {
-                                notification: { 
-                                    title: `${owner.display_name} Has Invited You Into Their Home`, 
-                                    body: `${user[0].display_name}, Welcome to ${user[0].home_name}`
-                                }
-                            }
-                        }).catch((error) => {
-                            reject(error);
-                        });
-                    } else {
-                        await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-                            i, request.body.home_id
-                        ]).then(([rows, fields]) => {
-                            if (rows.affectedRows === 0) {
-                                reply.send({
-                                    output: 'error',
-                                    message: 'fail to delete user from home'
-                                });
-                                reject("")
-                            }
-        
-                            message = {
-                                notification: { 
-                                    title: `You Has Remove From Home ${user[0].home_name}`, 
-                                    body: `Good Bye`
-                                }
-                            }
-                        }).catch((error) => {
-                            reject(error);
-                        });
-                    }
-    
-                    if (user[0].user_notification_token !== null && user[0].user_notification_token !== undefined && user[0].user_notification_token !== "") {
-                        admin.messaging().sendToDevice(user[0].user_notification_token, message, options)
-                        .then((response) => {
-                            console.log("message sent successfully")
-                        }).catch((error) => {
-                            console.error(error);
-                        });
-                    }
-    
-                    if (index == (user_ids.length - 1)) resolve()
                 }).catch((error) => {
                     reject(error);
                 });
+
+                let message;
+
+                if (insert) {
+                    await connection.promise().query("INSERT INTO User_In_Home (home_id, user_id, user_relationship, invitation_status, last_updated_on) VALUES (?, ?, '', DEFAULT, DEFAULT)", [
+                        request.body.home_id, i
+                    ]).then(([rows, fields]) => {
+                        if (rows.affectedRows === 0) {
+                            reply.send({
+                                output: 'error',
+                                message: 'fail to add user to home'
+                            });
+                            reject("");
+                        }
+                        console.log(owner)
+                        console.log(user)
+        
+                        message = {
+                            notification: { 
+                                title: `${owner[0].display_name} Has Invited You Into Their Home`, 
+                                body: `${user[0].display_name}, Welcome to ${user[0].home_name}`
+                            }
+                        }
+                    }).catch((error) => {
+                        reject(error);
+                    });
+                } else {
+                    await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
+                        i, request.body.home_id
+                    ]).then(([rows, fields]) => {
+                        if (rows.affectedRows === 0) {
+                            reply.send({
+                                output: 'error',
+                                message: 'fail to delete user from home'
+                            });
+                            reject("")
+                        }
+    
+                        message = {
+                            notification: { 
+                                title: `You Has Remove From Home ${user[0].home_name}`, 
+                                body: `Good Bye`
+                            }
+                        }
+                    }).catch((error) => {
+                        reject(error);
+                    });
+                }
+
+                if (user[0].user_notification_token !== null && user[0].user_notification_token !== undefined && user[0].user_notification_token !== "") {
+                    admin.messaging().sendToDevice(user[0].user_notification_token, message, options)
+                    .then((response) => {
+                        console.log("message sent successfully")
+                    }).catch((error) => {
+                        console.error(error);
+                    });
+                }
+
+                if (index == (user_ids.length - 1)) resolve()
             });
         }).then(() => {
             connection.end();
