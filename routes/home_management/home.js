@@ -846,7 +846,8 @@ module.exports = async (fastify, opts) => {
             
             return reply.send({
                 output: "error",
-                message: error.message
+                message: error.message,
+                line: 850
             }); 
         })
     });
