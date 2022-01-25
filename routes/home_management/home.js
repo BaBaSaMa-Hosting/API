@@ -897,7 +897,7 @@ module.exports = async (fastify, opts) => {
         console.log(users);
         if (users.length === 1) {
             await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ?", [
-                request.body.target_user_id, request.body.home_id
+                request.body.user_id, request.body.home_id
             ]).then(([rows, fields]) => {
                 if (rows.affectedRows === 0) {
                     connection.end();
@@ -922,7 +922,7 @@ module.exports = async (fastify, opts) => {
             }); 
         } else {
             await connection.promise().query("DELETE FROM User_In_Home WHERE user_id = ? AND home_id = ? AND user_relationship != 'Home Owner'", [
-                request.body.target_user_id, request.body.home_id
+                request.body.user_id, request.body.home_id
             ]).then(([rows, fields]) => {
                 if (rows.affectedRows === 0) {
                     connection.end();
