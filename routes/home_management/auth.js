@@ -127,7 +127,7 @@ module.exports = async (fastify, opts) => {
 
         connection.connect();
 
-        connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
+        await connection.promise().query("SELECT * FROM Users WHERE user_id = ?", [
             request.body.user_id
         ]).then(([rows, fields]) => {
             if (rows.length === 1) {
@@ -148,7 +148,7 @@ module.exports = async (fastify, opts) => {
             }); 
         });
 
-        connection.promise().query("INSERT INTO Users (user_id, display_name, auth_type, user_notification_token) VALUES (?, ?, ?, ?)", [
+        await connection.promise().query("INSERT INTO Users (user_id, display_name, auth_type, user_notification_token) VALUES (?, ?, ?, ?)", [
             request.body.user_id, request.body.display_name, request.body.auth_type, request.body.notification_token
         ]).then(([rows, fields]) => {
             connection.end();
